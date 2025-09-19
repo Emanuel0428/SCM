@@ -1,0 +1,89 @@
+---
+// Componente de formulario y tabla para CRUD de insumos
+const fields = [
+  { label: 'Nombre', name: 'nombre', type: 'text', required: true },
+  { label: 'Categoría', name: 'categoria', type: 'text', required: true },
+  { label: 'Cantidad', name: 'cantidad', type: 'number', required: true },
+  { label: 'Ubicación', name: 'ubicacion', type: 'text', required: true },
+  { label: 'Fecha de compra', name: 'fechaCompra', type: 'date', required: true },
+  { label: 'Proveedor', name: 'proveedor', type: 'text', required: false },
+  { label: 'Valor unitario', name: 'valorUnitario', type: 'number', required: false },
+  { label: 'Garantía (meses)', name: 'garantia', type: 'number', required: false },
+  { label: 'Fecha de vencimiento garantía', name: 'fechaVencimientoGarantia', type: 'date', required: false },
+  { label: 'Mantenimiento programado', name: 'mantenimiento', type: 'date', required: false },
+  { label: 'Observaciones', name: 'observaciones', type: 'text', required: false },
+];
+const exampleData = [
+  {
+    nombre: 'Laptop HP', categoria: 'Electrónica', cantidad: 5, ubicacion: 'Oficina 1', fechaCompra: '2024-01-10', proveedor: 'HP', valorUnitario: 2500, garantia: 24, fechaVencimientoGarantia: '2026-01-10', mantenimiento: '2025-01-10', observaciones: 'Buen estado'
+  },
+  {
+    nombre: 'Proyector Epson', categoria: 'Audiovisual', cantidad: 2, ubicacion: 'Sala Reuniones', fechaCompra: '2023-09-15', proveedor: 'Epson', valorUnitario: 1200, garantia: 12, fechaVencimientoGarantia: '2024-09-15', mantenimiento: '2024-09-10', observaciones: 'Revisar lámpara'
+  },
+  {
+    nombre: 'Silla ergonómica', categoria: 'Muebles', cantidad: 10, ubicacion: 'Oficina 2', fechaCompra: '2022-05-20', proveedor: 'OfiMuebles', valorUnitario: 350, garantia: 36, fechaVencimientoGarantia: '2025-05-20', mantenimiento: '2025-05-01', observaciones: ''
+  },
+];
+---
+<div class="w-full flex flex-col gap-8">
+  <form class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {fields.map(field => (
+      <div class="flex flex-col">
+        <label class="font-semibold text-blue-900 mb-1">{field.label}</label>
+        <input 
+          type={field.type as any}
+          name={field.name} 
+          required={field.required} 
+          class="border border-blue-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none transition"
+          placeholder={field.label} 
+        />
+      </div>
+    ))}
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 mt-4 text-center">
+      <button type="submit" class="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition md:w-auto">Registrar insumo</button>
+    </div>
+  </form>
+  <div class="overflow-x-auto rounded-lg shadow-lg bg-white/80 backdrop-blur max-w-full">
+    <table class="min-w-full divide-y divide-blue-100">
+      <thead class="sticky top-0">
+        <tr class="bg-gradient-to-r from-blue-600 to-blue-400 text-white whitespace-nowrap">
+          <th class="px-4 py-3 text-sm">Nombre</th>
+          <th class="px-4 py-3 text-sm">Categoría</th>
+          <th class="px-4 py-3 text-sm">Cantidad</th>
+          <th class="px-4 py-3 text-sm">Ubicación</th>
+          <th class="px-4 py-3 text-sm">Fecha compra</th>
+          <th class="px-4 py-3 text-sm">Proveedor</th>
+          <th class="px-4 py-3 text-sm">Valor</th>
+          <th class="px-4 py-3 text-sm">Garantía</th>
+          <th class="px-4 py-3 text-sm">Vence</th>
+          <th class="px-4 py-3 text-sm">Mantenimiento</th>
+          <th class="px-4 py-3 text-sm">Observaciones</th>
+          <th class="px-4 py-3 text-sm">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-blue-50">
+        {exampleData.map((item, idx) => (
+          <tr class="hover:bg-blue-50 transition">
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.nombre}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.categoria}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.cantidad}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.ubicacion}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fechaCompra}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.proveedor}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">${item.valorUnitario}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.garantia} meses</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fechaVencimientoGarantia}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.mantenimiento}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[150px] truncate">{item.observaciones}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">
+              <div class="flex gap-1">
+                <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs">Editar</button>
+                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>

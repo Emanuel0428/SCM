@@ -1,0 +1,69 @@
+---
+---
+<div class="chart-container" style="position: relative; height:300px; width:100%;">
+  <canvas id="stockChart"></canvas>
+
+  <script>
+    import Chart from 'chart.js/auto';
+
+    // Datos de ejemplo para el gráfico de stock
+    const mockData = {
+      labels: ['Electrónica', 'Audiovisual', 'Muebles', 'Papelería'],
+      datasets: [{
+        label: 'Cantidad de productos',
+        data: [12, 7, 15, 9],
+        backgroundColor: [
+          '#2563eb',
+          '#38bdf8',
+          '#fbbf24',
+          '#a3e635'
+        ],
+        hoverBackgroundColor: [
+          '#1e40af',
+          '#0284c7',
+          '#d97706',
+          '#84cc16'
+        ],
+        borderWidth: 1,
+        hoverBorderWidth: 2,
+        hoverOffset: 5
+      }]
+    };
+
+    // Crear el gráfico cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('stockChart') as HTMLCanvasElement;
+      
+      if (ctx) {
+        new Chart(ctx, {
+        type: 'doughnut',
+        data: mockData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: {
+            animateRotate: true,
+            animateScale: false
+          },
+          plugins: {
+            legend: {
+              position: 'right',
+            },
+            title: {
+              display: true,
+              text: 'Distribución por categoría'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.label}: ${context.raw}`;
+                }
+              }
+            }
+          }
+        }
+      });
+      }
+    });
+  </script>
+</div>

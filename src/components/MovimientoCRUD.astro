@@ -1,0 +1,108 @@
+---
+// Componente para entrada/egreso de inventario con campos más completos
+const fields = [
+  { label: 'Producto', name: 'producto', type: 'text', required: true },
+  { label: 'Categoría', name: 'categoria', type: 'text', required: true },
+  { label: 'Cantidad', name: 'cantidad', type: 'number', required: true },
+  { label: 'Ubicación', name: 'ubicacion', type: 'text', required: true },
+  { label: 'Fecha', name: 'fecha', type: 'date', required: true },
+  { label: 'Responsable', name: 'responsable', type: 'text', required: true },
+  { label: 'Número de documento', name: 'documento', type: 'text', required: false },
+  { label: 'Observaciones', name: 'observaciones', type: 'text', required: false },
+];
+
+interface Props {
+  tipo: 'ingreso' | 'egreso';
+}
+
+const { tipo } = Astro.props;
+const titulo = tipo === 'ingreso' ? 'Registrar nuevo ingreso' : 'Registrar nuevo egreso';
+const destino = tipo === 'ingreso' ? 'Ubicación' : 'Destino';
+fields[3].label = destino;
+
+// Datos de ejemplo para la tabla
+const movimientos = [
+  {
+    producto: 'Laptop HP',
+    categoria: 'Electrónica',
+    cantidad: 2,
+    ubicacion: tipo === 'ingreso' ? 'Oficina 1' : 'Depto. Sistemas',
+    fecha: '2025-08-29',
+    responsable: 'Juan Pérez',
+    documento: 'FAC-2569',
+    observaciones: 'Entrega completa'
+  },
+  {
+    producto: 'Proyector Epson',
+    categoria: 'Audiovisual',
+    cantidad: 1,
+    ubicacion: tipo === 'ingreso' ? 'Sala Reuniones' : 'Depto. Marketing',
+    fecha: '2025-08-28',
+    responsable: 'Ana García',
+    documento: 'OC-1298',
+    observaciones: 'Revisar estado'
+  }
+];
+
+const colorBoton = tipo === 'ingreso' ? 'from-green-600 to-green-400 hover:from-green-700 hover:to-green-500' : 'from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500';
+const textoBoton = tipo === 'ingreso' ? 'Registrar ingreso' : 'Registrar egreso';
+---
+<div class="w-full flex flex-col gap-8">
+  <form class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <h2 class="text-lg font-bold mb-2 text-blue-800 sm:col-span-2">{titulo}</h2>
+    {fields.map(field => (
+      <div class="flex flex-col">
+        <label class="font-semibold text-blue-900 mb-1">{field.label}</label>
+        <input 
+          type={field.type as any} 
+          name={field.name} 
+          required={field.required} 
+          class="border border-blue-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none transition"
+          placeholder={field.label} 
+        />
+      </div>
+    ))}
+    <div class="sm:col-span-2 mt-4 text-center">
+      <button type="submit" class={`bg-gradient-to-r ${colorBoton} text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 transition md:w-auto`}>{textoBoton}</button>
+    </div>
+  </form>
+  
+  <div class="overflow-x-auto rounded-lg shadow-lg bg-white/80 backdrop-blur">
+    <h2 class="text-lg font-bold p-4 text-blue-800">Últimos {tipo === 'ingreso' ? 'ingresos' : 'egresos'}</h2>
+    <table class="min-w-full divide-y divide-blue-100">
+      <thead class="sticky top-0">
+        <tr class="bg-gradient-to-r from-blue-600 to-blue-400 text-white whitespace-nowrap">
+          <th class="px-4 py-3 text-sm">Producto</th>
+          <th class="px-4 py-3 text-sm">Categoría</th>
+          <th class="px-4 py-3 text-sm">Cantidad</th>
+          <th class="px-4 py-3 text-sm">{destino}</th>
+          <th class="px-4 py-3 text-sm">Fecha</th>
+          <th class="px-4 py-3 text-sm">Responsable</th>
+          <th class="px-4 py-3 text-sm">Documento</th>
+          <th class="px-4 py-3 text-sm">Observaciones</th>
+          <th class="px-4 py-3 text-sm">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-blue-50">
+        {movimientos.map((item) => (
+          <tr class="hover:bg-blue-50 transition">
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.producto}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.categoria}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.cantidad}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.ubicacion}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fecha}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.responsable}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.documento}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[150px] truncate">{item.observaciones}</td>
+            <td class="px-4 py-2 text-sm whitespace-nowrap">
+              <div class="flex gap-1">
+                <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs">Editar</button>
+                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>

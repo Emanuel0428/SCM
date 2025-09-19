@@ -1,0 +1,62 @@
+---
+---
+<div class="chart-container" style="position: relative; height:300px; width:100%;">
+  <canvas id="categoriasEgresoChart"></canvas>
+
+  <script>
+    import Chart from 'chart.js/auto';
+
+    // Datos de ejemplo para el gráfico de egresos por categoría
+    const mockData = {
+      labels: ['Electrónica', 'Audiovisual', 'Muebles', 'Papelería'],
+      datasets: [{
+        label: 'Egresos',
+        data: [2, 1, 4, 3],
+        backgroundColor: [
+          '#2563eb',
+          '#38bdf8', 
+          '#fbbf24',
+          '#a3e635'
+        ],
+      }]
+    };
+
+    // Crear el gráfico cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('categoriasEgresoChart') as HTMLCanvasElement;
+      
+      if (ctx) {
+        new Chart(ctx, {
+        type: 'bar',
+        data: mockData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            title: {
+              display: true,
+              text: 'Egresos por categoría'
+            }
+          }
+        }
+      });
+      }
+    });
+  </script>
+</div>

@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+import StockChart from '../components/StockChart.astro';
+import MovimientosChart from '../components/MovimientosChart.astro';
+---
+<Layout>
+  <div class="flex flex-col items-center justify-center min-h-[70vh] w-full">
+    <h1 class="text-4xl font-extrabold mb-8 text-blue-900 text-center drop-shadow">Dashboard</h1>
+    <div class="w-full max-w-6xl grid md:grid-cols-3 gap-8 mb-10">
+      <div class="bg-white/80 rounded-xl shadow-lg p-6 flex flex-col items-center">
+        <h2 class="text-lg font-bold mb-2 text-blue-800">Resumen de Stock</h2>
+        <StockChart />
+      </div>
+      <div class="bg-white/80 rounded-xl shadow-lg p-6 flex flex-col items-center">
+        <h2 class="text-lg font-bold mb-2 text-blue-800">Movimientos recientes</h2>
+        <MovimientosChart />
+      </div>
+      <div class="bg-white/80 rounded-xl shadow-lg p-6 flex flex-col items-center">
+        <h2 class="text-lg font-bold mb-2 text-blue-800">Alertas de Inventario</h2>
+        <ul class="text-red-600 font-semibold text-sm mt-2 space-y-1">
+          <li>• Papel bond bajo stock</li>
+          <li>• Proyector Epson: solo 1 disponible</li>
+        </ul>
+      </div>
+    </div>
+    <div class="w-full max-w-6xl grid md:grid-cols-2 gap-8">
+      <div class="bg-white/80 rounded-xl shadow-lg p-6">
+        <h2 class="text-lg font-bold mb-2 text-blue-800">Top productos con más movimientos</h2>
+        <ul class="list-decimal ml-6 text-blue-900 space-y-1">
+          <li>Laptop HP</li>
+          <li>Resma de papel</li>
+          <li>Silla ergonómica</li>
+        </ul>
+      </div>
+      <div class="bg-white/80 rounded-xl shadow-lg p-6">
+        <h2 class="text-lg font-bold mb-2 text-blue-800">Últimos ingresos y egresos</h2>
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-blue-700">
+              <th class="px-2 py-1">Fecha</th>
+              <th class="px-2 py-1">Producto</th>
+              <th class="px-2 py-1">Tipo</th>
+              <th class="px-2 py-1">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="px-2 py-1">2025-08-29</td>
+              <td class="px-2 py-1">Laptop HP</td>
+              <td class="px-2 py-1 text-green-600">Ingreso</td>
+              <td class="px-2 py-1">2</td>
+            </tr>
+            <tr>
+              <td class="px-2 py-1">2025-08-28</td>
+              <td class="px-2 py-1">Proyector Epson</td>
+              <td class="px-2 py-1 text-red-600">Egreso</td>
+              <td class="px-2 py-1">1</td>
+            </tr>
+            <tr>
+              <td class="px-2 py-1">2025-08-27</td>
+              <td class="px-2 py-1">Resma de papel</td>
+              <td class="px-2 py-1 text-green-600">Ingreso</td>
+              <td class="px-2 py-1">10</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layout>

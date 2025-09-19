@@ -1,0 +1,93 @@
+---
+---
+<div class="chart-container" style="position: relative; height:300px; width:100%;">
+  <canvas id="movimientosChart"></canvas>
+
+  <script>
+    import Chart from 'chart.js/auto';
+
+    // Datos de ejemplo para el gráfico de movimientos
+    const mockData = {
+      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May'],
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: [10, 12, 8, 15, 9],
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.2)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#2563eb',
+          pointHoverRadius: 6,
+          fill: true
+        },
+        {
+          label: 'Egresos',
+          data: [7, 9, 6, 10, 8],
+          borderColor: '#fbbf24',
+          backgroundColor: 'rgba(251, 191, 36, 0.2)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#fbbf24',
+          pointHoverRadius: 6,
+          fill: true
+        }
+      ]
+    };
+
+    // Crear el gráfico cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('movimientosChart') as HTMLCanvasElement;
+      
+      if (ctx) {
+        new Chart(ctx, {
+        type: 'line',
+        data: mockData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: 'Movimientos recientes'
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1e40af',
+              bodyColor: '#1f2937',
+              borderColor: '#e2e8f0',
+              borderWidth: 1,
+              padding: 10,
+              boxPadding: 3
+            }
+          }
+        }
+      });
+      }
+    });
+  </script>
+</div>

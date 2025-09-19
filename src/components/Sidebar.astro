@@ -1,0 +1,35 @@
+---
+// Sidebar component for SCM
+const navItems = [
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Inventario', href: '/inventario' },
+  { name: 'Ingresos', href: '/ingresos' },
+  { name: 'Egresos', href: '/egresos' },
+  { name: 'Reportes', href: '/reportes' },
+  { name: 'Configuración', href: '/configuracion' },
+];
+---
+<aside class="h-screen w-64 bg-gradient-to-b from-blue-700 to-blue-900 text-white shadow-xl flex flex-col py-8 px-6 fixed z-20 transition-all duration-300 md:relative md:translate-x-0 md:w-64 w-60 md:block">
+  <div class="mb-10 flex flex-col items-center">
+    <div class="rounded-full bg-white/10 p-3 mb-2">
+      <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff" fill-opacity=".1"/><path d="M12 6v6l4 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <span class="text-2xl font-extrabold tracking-tight">SCM</span>
+    <span class="block text-xs text-blue-200">Inventarios internos</span>
+  </div>
+  <nav class="flex-1">
+    <ul class="space-y-2">
+      {navItems.map(item => (
+        <li>
+          <a href={item.href} class="flex items-center gap-3 px-4 py-2 rounded-lg font-medium hover:bg-blue-600/60 transition-colors group">
+            <span class="w-2 h-2 rounded-full bg-blue-300 group-hover:bg-white"></span>
+            <span>{item.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="mt-auto pt-8 text-xs text-blue-200 text-center opacity-70">
+    &copy; {new Date().getFullYear()} SCM
+  </div>
+</aside>
