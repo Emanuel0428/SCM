@@ -1,108 +1,435 @@
 ---
-// Componente para entrada/egreso de inventario con campos más completos
-const fields = [
-  { label: 'Producto', name: 'producto', type: 'text', required: true },
-  { label: 'Categoría', name: 'categoria', type: 'text', required: true },
-  { label: 'Cantidad', name: 'cantidad', type: 'number', required: true },
-  { label: 'Ubicación', name: 'ubicacion', type: 'text', required: true },
-  { label: 'Fecha', name: 'fecha', type: 'date', required: true },
-  { label: 'Responsable', name: 'responsable', type: 'text', required: true },
-  { label: 'Número de documento', name: 'documento', type: 'text', required: false },
-  { label: 'Observaciones', name: 'observaciones', type: 'text', required: false },
-];
+import { empresas, sedes, ubicaciones, variantes, modelos, marcas, tipos_movimiento } from '../data/mockData';
 
+// Props para filtrar por tipo de movimiento
 interface Props {
-  tipo: 'ingreso' | 'egreso';
+  tipo?: 'ingreso' | 'egreso' | 'todos';
 }
 
-const { tipo } = Astro.props;
-const titulo = tipo === 'ingreso' ? 'Registrar nuevo ingreso' : 'Registrar nuevo egreso';
-const destino = tipo === 'ingreso' ? 'Ubicación' : 'Destino';
-fields[3].label = destino;
+const { tipo = 'todos' } = Astro.props;
 
-// Datos de ejemplo para la tabla
-const movimientos = [
-  {
-    producto: 'Laptop HP',
-    categoria: 'Electrónica',
-    cantidad: 2,
-    ubicacion: tipo === 'ingreso' ? 'Oficina 1' : 'Depto. Sistemas',
-    fecha: '2025-08-29',
-    responsable: 'Juan Pérez',
-    documento: 'FAC-2569',
-    observaciones: 'Entrega completa'
-  },
-  {
-    producto: 'Proyector Epson',
-    categoria: 'Audiovisual',
-    cantidad: 1,
-    ubicacion: tipo === 'ingreso' ? 'Sala Reuniones' : 'Depto. Marketing',
-    fecha: '2025-08-28',
-    responsable: 'Ana García',
-    documento: 'OC-1298',
-    observaciones: 'Revisar estado'
-  }
-];
-
-const colorBoton = tipo === 'ingreso' ? 'from-green-600 to-green-400 hover:from-green-700 hover:to-green-500' : 'from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500';
-const textoBoton = tipo === 'ingreso' ? 'Registrar ingreso' : 'Registrar egreso';
+// Filtrar tipos de movimiento según el tipo de página
+let tiposPermitidos = tipos_movimiento;
+if (tipo === 'ingreso') {
+  tiposPermitidos = tipos_movimiento.filter(t => t.codigo === 'ENTRADA');
+} else if (tipo === 'egreso') {
+  tiposPermitidos = tipos_movimiento.filter(t => t.codigo === 'SALIDA' || t.codigo === 'TRASLADO');
+}
 ---
-<div class="w-full flex flex-col gap-8">
-  <form class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <h2 class="text-lg font-bold mb-2 text-blue-800 sm:col-span-2">{titulo}</h2>
-    {fields.map(field => (
-      <div class="flex flex-col">
-        <label class="font-semibold text-blue-900 mb-1">{field.label}</label>
-        <input 
-          type={field.type as any} 
-          name={field.name} 
-          required={field.required} 
-          class="border border-blue-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none transition"
-          placeholder={field.label} 
-        />
-      </div>
-    ))}
-    <div class="sm:col-span-2 mt-4 text-center">
-      <button type="submit" class={`bg-gradient-to-r ${colorBoton} text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 transition md:w-auto`}>{textoBoton}</button>
+<div class="w-full flex flex-col gap-8" id="movimientos-container" data-tipo={tipo}>
+  <form id="form-movimiento" class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <input type="hidden" name="id" id="movimiento-id" />
+    
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Tipo Movimiento <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="tipo_mov_id"
+        id="tipo-mov-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {tiposPermitidos.map((t: any) => (
+          <option value={t.id}>{t.codigo}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Elemento <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="variante_id"
+        id="variante-id-mov"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {variantes.map((v: any) => {
+          const modelo = modelos.find((m: any) => m.id === v.modelo_id);
+          const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
+          return (
+            <option value={v.id}>
+              {marca?.nombre} {modelo?.modelo} {v.color ? `- ${v.color}` : ''}
+            </option>
+          );
+        })}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">Sede Origen</label>
+      <select
+        name="sede_desde_id"
+        id="sede-desde-id"
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">N/A</option>
+        {sedes.map((s: any) => (
+          <option value={s.id}>{s.nombre}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">Ubicación Origen</label>
+      <select
+        name="ubic_desde_id"
+        id="ubic-desde-id"
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">N/A</option>
+        {ubicaciones.map((u: any) => (
+          <option value={u.id}>{u.codigo} ({u.tipo})</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Sede Destino <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="sede_hacia_id"
+        id="sede-hacia-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {sedes.map((s: any) => (
+          <option value={s.id}>{s.nombre}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Ubicación Destino <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="ubic_hacia_id"
+        id="ubic-hacia-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {ubicaciones.map((u: any) => (
+          <option value={u.id}>{u.codigo} ({u.tipo})</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Cantidad <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="number"
+        name="cantidad"
+        id="cantidad"
+        required
+        min="1"
+        step="1"
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+        placeholder="Ingrese cantidad"
+      />
+    </div>
+
+    <div class="flex flex-col md:col-span-2">
+      <label class="font-semibold text-blue-900 mb-1">Motivo</label>
+      <input 
+        type="text"
+        name="motivo"
+        id="motivo"
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+        placeholder="Describa el motivo del movimiento"
+      />
+    </div>
+
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 mt-4 text-center flex gap-2 justify-center">
+      <button 
+        type="submit" 
+        id="btn-submit-mov"
+        class="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition"
+      >
+        {tipo === 'ingreso' ? '📥 Registrar Ingreso' : tipo === 'egreso' ? '📤 Registrar Egreso' : 'Registrar Movimiento'}
+      </button>
+      <button 
+        type="button" 
+        id="btn-cancel-mov"
+        class="bg-gray-500 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:bg-gray-600 transition hidden"
+      >
+        Cancelar
+      </button>
     </div>
   </form>
-  
-  <div class="overflow-x-auto rounded-lg shadow-lg bg-white/80 backdrop-blur">
-    <h2 class="text-lg font-bold p-4 text-blue-800">Últimos {tipo === 'ingreso' ? 'ingresos' : 'egresos'}</h2>
+
+  <div class="overflow-x-auto rounded-lg shadow-lg bg-white/80 backdrop-blur max-w-full">
     <table class="min-w-full divide-y divide-blue-100">
       <thead class="sticky top-0">
         <tr class="bg-gradient-to-r from-blue-600 to-blue-400 text-white whitespace-nowrap">
-          <th class="px-4 py-3 text-sm">Producto</th>
-          <th class="px-4 py-3 text-sm">Categoría</th>
+          <th class="px-4 py-3 text-sm">Tipo</th>
+          <th class="px-4 py-3 text-sm">Elemento</th>
+          <th class="px-4 py-3 text-sm">Color</th>
+          <th class="px-4 py-3 text-sm">Origen</th>
+          <th class="px-4 py-3 text-sm">Destino</th>
           <th class="px-4 py-3 text-sm">Cantidad</th>
-          <th class="px-4 py-3 text-sm">{destino}</th>
           <th class="px-4 py-3 text-sm">Fecha</th>
-          <th class="px-4 py-3 text-sm">Responsable</th>
-          <th class="px-4 py-3 text-sm">Documento</th>
-          <th class="px-4 py-3 text-sm">Observaciones</th>
+          <th class="px-4 py-3 text-sm">Motivo</th>
           <th class="px-4 py-3 text-sm">Acciones</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
-        {movimientos.map((item) => (
-          <tr class="hover:bg-blue-50 transition">
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.producto}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.categoria}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.cantidad}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.ubicacion}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fecha}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.responsable}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.documento}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[150px] truncate">{item.observaciones}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">
-              <div class="flex gap-1">
-                <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs">Editar</button>
-                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        ))}
+      <tbody id="tabla-movimientos" class="divide-y divide-blue-50">
+        <!-- Los datos se cargarán dinámicamente -->
       </tbody>
     </table>
   </div>
 </div>
+
+<script>
+  import { sedes, ubicaciones, variantes as variantesIniciales, modelos, marcas, tipos_movimiento } from '../data/mockData';
+  
+  function getVariantes() {
+    const data = localStorage.getItem('scm_variantes');
+    return data ? JSON.parse(data) : variantesIniciales;
+  }
+  
+  function initMovimientos() {
+    if (!localStorage.getItem('scm_movimientos')) {
+      const movimientosIniciales = [
+        {
+          id: '1',
+          empresa_id: '1',
+          tipo_mov_id: 1,
+          ocurrido_el: '2024-01-10T10:00:00Z',
+          realizado_por: null,
+          sede_desde_id: null,
+          ubic_desde_id: null,
+          sede_hacia_id: '1',
+          ubic_hacia_id: '1',
+          activo_id: null,
+          variante_id: '1',
+          codigo_lote: null,
+          cantidad: 5,
+          motivo: 'Compra inicial de laptops HP',
+          ref_tabla: null,
+          ref_id: null
+        },
+        {
+          id: '2',
+          empresa_id: '1',
+          tipo_mov_id: 3,
+          ocurrido_el: '2024-02-20T11:30:00Z',
+          realizado_por: null,
+          sede_desde_id: '1',
+          ubic_desde_id: '1',
+          sede_hacia_id: '2',
+          ubic_hacia_id: '2',
+          activo_id: null,
+          variante_id: '1',
+          codigo_lote: null,
+          cantidad: 2,
+          motivo: 'Traslado de equipos a sede secundaria',
+          ref_tabla: null,
+          ref_id: null
+        }
+      ];
+      localStorage.setItem('scm_movimientos', JSON.stringify(movimientosIniciales));
+    }
+  }
+
+  function getMovimientos() {
+    const data = localStorage.getItem('scm_movimientos');
+    return data ? JSON.parse(data) : [];
+  }
+
+  function saveMovimientos(movimientos: any[]) {
+    localStorage.setItem('scm_movimientos', JSON.stringify(movimientos));
+  }
+
+  function renderTablaMovimientos() {
+    const tbody = document.getElementById('tabla-movimientos');
+    if (!tbody) return;
+
+    const container = document.getElementById('movimientos-container');
+    const tipoFiltro = container?.getAttribute('data-tipo') || 'todos';
+    
+    let movimientos = getMovimientos();
+    const variantes = getVariantes();
+    
+    // Filtrar movimientos según el tipo de página
+    if (tipoFiltro === 'ingreso') {
+      movimientos = movimientos.filter((m: any) => m.tipo_mov_id === 1); // ENTRADA
+    } else if (tipoFiltro === 'egreso') {
+      movimientos = movimientos.filter((m: any) => m.tipo_mov_id === 2 || m.tipo_mov_id === 3); // SALIDA o TRASLADO
+    }
+    
+    tbody.innerHTML = '';
+
+    movimientos.forEach((mov: any) => {
+      const variante = variantes.find((v: any) => v.id === mov.variante_id);
+      const modelo = variante ? modelos.find((m: any) => m.id === variante.modelo_id) : null;
+      const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
+      const sedeDesde = mov.sede_desde_id ? sedes.find((s: any) => s.id === mov.sede_desde_id) : null;
+      const ubicDesde = mov.ubic_desde_id ? ubicaciones.find((u: any) => u.id === mov.ubic_desde_id) : null;
+      const sedeHacia = sedes.find((s: any) => s.id === mov.sede_hacia_id);
+      const ubicHacia = ubicaciones.find((u: any) => u.id === mov.ubic_hacia_id);
+      const tipo = tipos_movimiento.find((t: any) => t.id === mov.tipo_mov_id);
+
+      const fecha = new Date(mov.ocurrido_el);
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-blue-50 transition';
+      tr.innerHTML = `
+        <td class="px-4 py-2 text-sm whitespace-nowrap">
+          <span class="px-2 py-1 rounded-full text-xs ${
+            tipo?.codigo === 'ENTRADA' 
+              ? 'bg-green-100 text-green-800'
+              : tipo?.codigo === 'SALIDA'
+              ? 'bg-red-100 text-red-800'
+              : 'bg-blue-100 text-blue-800'
+          }">
+            ${tipo?.codigo || 'DESCONOCIDO'}
+          </span>
+        </td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${marca?.nombre} ${modelo?.modelo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${variante?.color || 'N/A'}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeDesde && ubicDesde ? `${sedeDesde.nombre} - ${ubicDesde.codigo}` : 'N/A'}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeHacia?.nombre} - ${ubicHacia?.codigo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${mov.cantidad}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${fecha.toLocaleString()}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[200px] truncate">${mov.motivo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">
+          <div class="flex gap-1">
+            <button class="btn-editar-mov bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs" data-id="${mov.id}">
+              Editar
+            </button>
+            <button class="btn-anular bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs" data-id="${mov.id}">
+              Anular
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Agregar event listeners
+    document.querySelectorAll('.btn-editar-mov').forEach(btn => {
+      btn.addEventListener('click', handleEditarMov);
+    });
+    document.querySelectorAll('.btn-anular').forEach(btn => {
+      btn.addEventListener('click', handleAnular);
+    });
+  }
+
+  function handleEditarMov(e: Event) {
+    const id = (e.target as HTMLElement).getAttribute('data-id');
+    const movimientos = getMovimientos();
+    const mov = movimientos.find((m: any) => m.id === id);
+    
+    if (mov) {
+      (document.getElementById('movimiento-id') as HTMLInputElement).value = mov.id;
+      (document.getElementById('tipo-mov-id') as HTMLSelectElement).value = mov.tipo_mov_id.toString();
+      (document.getElementById('variante-id-mov') as HTMLSelectElement).value = mov.variante_id;
+      (document.getElementById('sede-desde-id') as HTMLSelectElement).value = mov.sede_desde_id || '';
+      (document.getElementById('ubic-desde-id') as HTMLSelectElement).value = mov.ubic_desde_id || '';
+      (document.getElementById('sede-hacia-id') as HTMLSelectElement).value = mov.sede_hacia_id;
+      (document.getElementById('ubic-hacia-id') as HTMLSelectElement).value = mov.ubic_hacia_id;
+      (document.getElementById('cantidad') as HTMLInputElement).value = mov.cantidad.toString();
+      (document.getElementById('motivo') as HTMLInputElement).value = mov.motivo || '';
+      
+      (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Actualizar Movimiento';
+      (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.remove('hidden');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function handleAnular(e: Event) {
+    const id = (e.target as HTMLElement).getAttribute('data-id');
+    if (confirm('¿Está seguro de anular este movimiento?')) {
+      const movimientos = getMovimientos();
+      const filtered = movimientos.filter((m: any) => m.id !== id);
+      saveMovimientos(filtered);
+      renderTablaMovimientos();
+      alert('Movimiento anulado correctamente');
+    }
+  }
+
+  // Form submit
+  const formMov = document.getElementById('form-movimiento');
+  formMov?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const id = formData.get('id') as string;
+    const tipo_mov_id = parseInt(formData.get('tipo_mov_id') as string);
+    const variante_id = formData.get('variante_id') as string;
+    const sede_desde_id = (formData.get('sede_desde_id') as string) || undefined;
+    const ubic_desde_id = (formData.get('ubic_desde_id') as string) || undefined;
+    const sede_hacia_id = formData.get('sede_hacia_id') as string;
+    const ubic_hacia_id = formData.get('ubic_hacia_id') as string;
+    const cantidad = parseInt(formData.get('cantidad') as string);
+    const motivo = formData.get('motivo') as string;
+    
+    const movimientos = getMovimientos();
+    
+    if (id) {
+      // Actualizar
+      const index = movimientos.findIndex((m: any) => m.id === id);
+      if (index !== -1) {
+        movimientos[index] = {
+          ...movimientos[index],
+          tipo_mov_id,
+          variante_id,
+          sede_desde_id,
+          ubic_desde_id,
+          sede_hacia_id,
+          ubic_hacia_id,
+          cantidad,
+          motivo
+        };
+        alert('Movimiento actualizado correctamente');
+      }
+    } else {
+      // Crear
+      const newMovimiento = {
+        id: Date.now().toString(),
+        empresa_id: '1',
+        tipo_mov_id,
+        variante_id,
+        sede_desde_id,
+        ubic_desde_id,
+        sede_hacia_id,
+        ubic_hacia_id,
+        cantidad,
+        motivo,
+        ocurrido_el: new Date().toISOString()
+      };
+      movimientos.push(newMovimiento);
+      alert('Movimiento registrado correctamente');
+    }
+    
+    saveMovimientos(movimientos);
+    (e.target as HTMLFormElement).reset();
+    (document.getElementById('movimiento-id') as HTMLInputElement).value = '';
+    (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Registrar Movimiento';
+    (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.add('hidden');
+    renderTablaMovimientos();
+  });
+
+  // Cancelar edición
+  document.getElementById('btn-cancel-mov')?.addEventListener('click', () => {
+    (document.getElementById('form-movimiento') as HTMLFormElement).reset();
+    (document.getElementById('movimiento-id') as HTMLInputElement).value = '';
+    (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Registrar Movimiento';
+    (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.add('hidden');
+  });
+
+  // Inicializar
+  initMovimientos();
+  renderTablaMovimientos();
+</script>

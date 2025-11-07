@@ -1,89 +1,630 @@
 ---
-// Componente de formulario y tabla para CRUD de insumos
-const fields = [
-  { label: 'Nombre', name: 'nombre', type: 'text', required: true },
-  { label: 'Categoría', name: 'categoria', type: 'text', required: true },
-  { label: 'Cantidad', name: 'cantidad', type: 'number', required: true },
-  { label: 'Ubicación', name: 'ubicacion', type: 'text', required: true },
-  { label: 'Fecha de compra', name: 'fechaCompra', type: 'date', required: true },
-  { label: 'Proveedor', name: 'proveedor', type: 'text', required: false },
-  { label: 'Valor unitario', name: 'valorUnitario', type: 'number', required: false },
-  { label: 'Garantía (meses)', name: 'garantia', type: 'number', required: false },
-  { label: 'Fecha de vencimiento garantía', name: 'fechaVencimientoGarantia', type: 'date', required: false },
-  { label: 'Mantenimiento programado', name: 'mantenimiento', type: 'date', required: false },
-  { label: 'Observaciones', name: 'observaciones', type: 'text', required: false },
-];
-const exampleData = [
-  {
-    nombre: 'Laptop HP', categoria: 'Electrónica', cantidad: 5, ubicacion: 'Oficina 1', fechaCompra: '2024-01-10', proveedor: 'HP', valorUnitario: 2500, garantia: 24, fechaVencimientoGarantia: '2026-01-10', mantenimiento: '2025-01-10', observaciones: 'Buen estado'
-  },
-  {
-    nombre: 'Proyector Epson', categoria: 'Audiovisual', cantidad: 2, ubicacion: 'Sala Reuniones', fechaCompra: '2023-09-15', proveedor: 'Epson', valorUnitario: 1200, garantia: 12, fechaVencimientoGarantia: '2024-09-15', mantenimiento: '2024-09-10', observaciones: 'Revisar lámpara'
-  },
-  {
-    nombre: 'Silla ergonómica', categoria: 'Muebles', cantidad: 10, ubicacion: 'Oficina 2', fechaCompra: '2022-05-20', proveedor: 'OfiMuebles', valorUnitario: 350, garantia: 36, fechaVencimientoGarantia: '2025-05-20', mantenimiento: '2025-05-01', observaciones: ''
-  },
-];
+import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from '../data/mockData';
 ---
-<div class="w-full flex flex-col gap-8">
-  <form class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    {fields.map(field => (
-      <div class="flex flex-col">
-        <label class="font-semibold text-blue-900 mb-1">{field.label}</label>
-        <input 
-          type={field.type as any}
-          name={field.name} 
-          required={field.required} 
-          class="border border-blue-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none transition"
-          placeholder={field.label} 
-        />
-      </div>
-    ))}
-    <div class="col-span-1 sm:col-span-2 md:col-span-3 mt-4 text-center">
-      <button type="submit" class="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition md:w-auto">Registrar insumo</button>
+<div class="w-full flex flex-col gap-8" id="inventario-container">
+  <form id="form-activo" class="bg-white/90 rounded-xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <input type="hidden" name="id" id="activo-id" />
+    <input type="hidden" name="variante_id" id="variante-id" />
+    
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Modelo <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="modelo_id"
+        id="modelo-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {modelos.map(m => (
+          <option value={m.id}>
+            {marcas.find(ma => ma.id === m.marca_id)?.nombre} {m.modelo}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">Color</label>
+      <input 
+        type="text"
+        name="color"
+        id="color"
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400"
+        placeholder="Ingrese color"
+      />
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Serie <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="text"
+        name="serie"
+        id="serie"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400"
+        placeholder="Ingrese serie"
+      />
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Etiqueta <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="text"
+        name="etiqueta"
+        id="etiqueta"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400"
+        placeholder="Ingrese etiqueta"
+      />
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Sede <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="sede_id"
+        id="sede-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {sedes.map(s => (
+          <option value={s.id}>{s.nombre}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Ubicación <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="ubicacion_id"
+        id="ubicacion-id"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
+      >
+        <option value="">Seleccione...</option>
+        {ubicaciones.map(u => (
+          <option value={u.id}>{u.codigo} ({u.tipo})</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="font-semibold text-blue-900 mb-1">
+        Fecha de compra <span class="text-red-500">*</span>
+      </label>
+      <input 
+        type="date"
+        name="fecha_compra"
+        id="fecha-compra"
+        required
+        class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400"
+      />
+    </div>
+
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 mt-4 text-center flex gap-2 justify-center">
+      <button 
+        type="submit" 
+        id="btn-submit"
+        class="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition"
+      >
+        Registrar Activo
+      </button>
+      <button 
+        type="button" 
+        id="btn-cancel"
+        class="bg-gray-500 text-white px-6 py-2 rounded-lg font-bold shadow hover:scale-105 hover:bg-gray-600 transition hidden"
+      >
+        Cancelar
+      </button>
     </div>
   </form>
+
   <div class="overflow-x-auto rounded-lg shadow-lg bg-white/80 backdrop-blur max-w-full">
     <table class="min-w-full divide-y divide-blue-100">
       <thead class="sticky top-0">
         <tr class="bg-gradient-to-r from-blue-600 to-blue-400 text-white whitespace-nowrap">
-          <th class="px-4 py-3 text-sm">Nombre</th>
-          <th class="px-4 py-3 text-sm">Categoría</th>
-          <th class="px-4 py-3 text-sm">Cantidad</th>
+          <th class="px-4 py-3 text-sm">Activo</th>
+          <th class="px-4 py-3 text-sm">Serie</th>
+          <th class="px-4 py-3 text-sm">Etiqueta</th>
+          <th class="px-4 py-3 text-sm">Color</th>
           <th class="px-4 py-3 text-sm">Ubicación</th>
-          <th class="px-4 py-3 text-sm">Fecha compra</th>
-          <th class="px-4 py-3 text-sm">Proveedor</th>
-          <th class="px-4 py-3 text-sm">Valor</th>
+          <th class="px-4 py-3 text-sm">Compra</th>
           <th class="px-4 py-3 text-sm">Garantía</th>
-          <th class="px-4 py-3 text-sm">Vence</th>
-          <th class="px-4 py-3 text-sm">Mantenimiento</th>
-          <th class="px-4 py-3 text-sm">Observaciones</th>
+          <th class="px-4 py-3 text-sm">Estado</th>
+          <th class="px-4 py-3 text-sm">Próx. Inspección</th>
           <th class="px-4 py-3 text-sm">Acciones</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-blue-50">
-        {exampleData.map((item, idx) => (
-          <tr class="hover:bg-blue-50 transition">
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.nombre}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.categoria}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.cantidad}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.ubicacion}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fechaCompra}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.proveedor}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">${item.valorUnitario}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.garantia} meses</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.fechaVencimientoGarantia}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">{item.mantenimiento}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[150px] truncate">{item.observaciones}</td>
-            <td class="px-4 py-2 text-sm whitespace-nowrap">
-              <div class="flex gap-1">
-                <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs">Editar</button>
-                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        ))}
+      <tbody id="tabla-activos" class="divide-y divide-blue-50">
+        <!-- Los datos se cargarán dinámicamente -->
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Modal para trasladar -->
+<div id="modal-trasladar" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+    <h3 class="text-xl font-bold text-blue-900 mb-4">Trasladar Activo</h3>
+    <form id="form-trasladar">
+      <input type="hidden" id="trasladar-activo-id" />
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="font-semibold text-blue-900 mb-1 block">Nueva Sede</label>
+          <select
+            id="trasladar-sede"
+            required
+            class="border-2 border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none hover:border-gray-400 bg-white"
+          >
+            <option value="">Seleccione...</option>
+            {sedes.map(s => (
+              <option value={s.id}>{s.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-blue-900 mb-1 block">Nueva Ubicación</label>
+          <select
+            id="trasladar-ubicacion"
+            required
+            class="border-2 border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none hover:border-gray-400 bg-white"
+          >
+            <option value="">Seleccione...</option>
+            {ubicaciones.map(u => (
+              <option value={u.id}>{u.codigo} ({u.tipo})</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-blue-900 mb-1 block">Motivo</label>
+          <textarea
+            id="trasladar-motivo"
+            class="border-2 border-gray-300 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none hover:border-gray-400"
+            rows="3"
+            placeholder="Describa el motivo del traslado..."
+          ></textarea>
+        </div>
+        <div class="flex gap-2 justify-end mt-4">
+          <button
+            type="button"
+            id="btn-cancelar-trasladar"
+            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Confirmar Traslado
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  import { modelos, variantes as variantesIniciales, sedes, ubicaciones, marcas, politicas_modelo } from '../data/mockData';
+  
+  // Funciones de gestión de datos
+  function initData() {
+    if (!localStorage.getItem('scm_activos')) {
+      const activosIniciales = [
+        {
+          id: '1',
+          variante_id: '1',
+          serie: 'HP2023001',
+          etiqueta: 'LAP-001',
+          sede_id: '1',
+          ubicacion_id: '3',
+          fecha_compra: '2023-01-15',
+          garantia_hasta: '2025-01-15'
+        },
+        {
+          id: '2',
+          variante_id: '1',
+          serie: 'HP2023002',
+          etiqueta: 'LAP-002',
+          sede_id: '1',
+          ubicacion_id: '3',
+          fecha_compra: '2023-01-15',
+          garantia_hasta: '2025-01-15'
+        }
+      ];
+      localStorage.setItem('scm_activos', JSON.stringify(activosIniciales));
+    }
+    // Inicializar variantes en localStorage
+    if (!localStorage.getItem('scm_variantes')) {
+      localStorage.setItem('scm_variantes', JSON.stringify(variantesIniciales));
+    }
+  }
+
+  function getVariantes() {
+    const data = localStorage.getItem('scm_variantes');
+    return data ? JSON.parse(data) : variantesIniciales;
+  }
+
+  function saveVariantes(variantes: any[]) {
+    localStorage.setItem('scm_variantes', JSON.stringify(variantes));
+  }
+
+  function getActivos() {
+    const data = localStorage.getItem('scm_activos');
+    return data ? JSON.parse(data) : [];
+  }
+
+  function saveActivos(activos: any[]) {
+    localStorage.setItem('scm_activos', JSON.stringify(activos));
+  }
+
+  function getMovimientos() {
+    const data = localStorage.getItem('scm_movimientos');
+    return data ? JSON.parse(data) : [];
+  }
+
+  function saveMovimientos(movimientos: any[]) {
+    localStorage.setItem('scm_movimientos', JSON.stringify(movimientos));
+  }
+
+  function addMovimiento(movimiento: any) {
+    const movimientos = getMovimientos();
+    movimientos.push({
+      ...movimiento,
+      id: Date.now().toString(),
+      ocurrido_el: new Date().toISOString()
+    });
+    saveMovimientos(movimientos);
+  }
+
+  function renderTabla() {
+    const tbody = document.getElementById('tabla-activos');
+    if (!tbody) return;
+
+    const activos = getActivos();
+    const variantes = getVariantes();
+    tbody.innerHTML = '';
+
+    activos.forEach((activo: any) => {
+      const variante = variantes.find((v: any) => v.id === activo.variante_id);
+      const modelo = modelos.find((m: any) => m.id === variante?.modelo_id);
+      const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
+      const sede = sedes.find((s: any) => s.id === activo.sede_id);
+      const ubicacion = ubicaciones.find((u: any) => u.id === activo.ubicacion_id);
+      const politica = modelo ? politicas_modelo.find((p: any) => p.modelo_id === modelo.id) : null;
+
+      const fechaCompra = new Date(activo.fecha_compra);
+      const garantiaHasta = new Date(activo.garantia_hasta);
+      const hoy = new Date();
+      const diasParaVencerGarantia = Math.ceil((garantiaHasta.getTime() - hoy.getTime()) / (1000 * 3600 * 24));
+      
+      let proximaInspeccion = null;
+      if (politica?.exige_inspeccion) {
+        proximaInspeccion = new Date(fechaCompra);
+        proximaInspeccion.setDate(proximaInspeccion.getDate() + (politica.dias_inspeccion || 0));
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-blue-50 transition';
+      tr.innerHTML = `
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${marca?.nombre} ${modelo?.modelo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${activo.serie}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${activo.etiqueta}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${variante?.color || 'N/A'}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${sede?.nombre} - ${ubicacion?.codigo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${fechaCompra.toLocaleDateString()}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${garantiaHasta.toLocaleDateString()}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">
+          <span class="px-2 py-1 rounded-full text-xs ${
+            diasParaVencerGarantia > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }">
+            ${diasParaVencerGarantia > 0 ? 'Vigente' : 'Vencida'}
+            <br/>
+            ${diasParaVencerGarantia > 0 
+              ? `${diasParaVencerGarantia} días restantes`
+              : `Venció hace ${Math.abs(diasParaVencerGarantia)} días`
+            }
+          </span>
+        </td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">
+          ${politica?.exige_inspeccion 
+            ? `<span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">${proximaInspeccion?.toLocaleDateString()}</span>`
+            : '<span class="text-gray-400">No requerida</span>'
+          }
+        </td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">
+          <div class="flex gap-1">
+            <button class="btn-editar bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded text-xs" data-id="${activo.id}">
+              Editar
+            </button>
+            <button class="btn-trasladar bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs" data-id="${activo.id}">
+              Trasladar
+            </button>
+            <button class="btn-eliminar bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs" data-id="${activo.id}">
+              Eliminar
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Agregar event listeners
+    document.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', handleEditar);
+    });
+    document.querySelectorAll('.btn-trasladar').forEach(btn => {
+      btn.addEventListener('click', handleTrasladar);
+    });
+    document.querySelectorAll('.btn-eliminar').forEach(btn => {
+      btn.addEventListener('click', handleEliminar);
+    });
+  }
+
+  function handleEditar(e: Event) {
+    const id = (e.target as HTMLElement).getAttribute('data-id');
+    const activos = getActivos();
+    const variantes = getVariantes();
+    const activo = activos.find((a: any) => a.id === id);
+    
+    if (activo) {
+      const variante = variantes.find((v: any) => v.id === activo.variante_id);
+      
+      (document.getElementById('activo-id') as HTMLInputElement).value = activo.id;
+      (document.getElementById('variante-id') as HTMLInputElement).value = activo.variante_id;
+      (document.getElementById('modelo-id') as HTMLSelectElement).value = variante?.modelo_id || '';
+      (document.getElementById('color') as HTMLInputElement).value = variante?.color || '';
+      (document.getElementById('serie') as HTMLInputElement).value = activo.serie;
+      (document.getElementById('etiqueta') as HTMLInputElement).value = activo.etiqueta;
+      (document.getElementById('sede-id') as HTMLSelectElement).value = activo.sede_id;
+      (document.getElementById('ubicacion-id') as HTMLSelectElement).value = activo.ubicacion_id;
+      (document.getElementById('fecha-compra') as HTMLInputElement).value = activo.fecha_compra;
+      
+      (document.getElementById('btn-submit') as HTMLButtonElement).textContent = 'Actualizar Activo';
+      (document.getElementById('btn-cancel') as HTMLButtonElement).classList.remove('hidden');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function handleTrasladar(e: Event) {
+    const id = (e.target as HTMLElement).getAttribute('data-id');
+    (document.getElementById('trasladar-activo-id') as HTMLInputElement).value = id || '';
+    (document.getElementById('modal-trasladar') as HTMLElement).classList.remove('hidden');
+    (document.getElementById('modal-trasladar') as HTMLElement).classList.add('flex');
+  }
+
+  function handleEliminar(e: Event) {
+    const id = (e.target as HTMLElement).getAttribute('data-id');
+    if (confirm('¿Está seguro de eliminar este activo?')) {
+      const activos = getActivos();
+      const filtered = activos.filter((a: any) => a.id !== id);
+      saveActivos(filtered);
+      
+      // Registrar movimiento de salida
+      const activo = activos.find((a: any) => a.id === id);
+      if (activo) {
+        addMovimiento({
+          empresa_id: '1',
+          tipo_mov_id: 2,
+          realizado_por: null,
+          sede_desde_id: activo.sede_id,
+          ubic_desde_id: activo.ubicacion_id,
+          sede_hacia_id: null,
+          ubic_hacia_id: null,
+          activo_id: activo.id,
+          variante_id: activo.variante_id,
+          codigo_lote: null,
+          cantidad: 1,
+          motivo: 'Eliminación de activo',
+          ref_tabla: null,
+          ref_id: null
+        });
+      }
+      
+      renderTabla();
+      alert('Activo eliminado correctamente');
+    }
+  }
+
+  // Form submit
+  const form = document.getElementById('form-activo');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const id = formData.get('id') as string;
+    const modelo_id = formData.get('modelo_id') as string;
+    const color = formData.get('color') as string;
+    const serie = formData.get('serie') as string;
+    const etiqueta = formData.get('etiqueta') as string;
+    const sede_id = formData.get('sede_id') as string;
+    const ubicacion_id = formData.get('ubicacion_id') as string;
+    const fecha_compra = formData.get('fecha_compra') as string;
+    
+    // Obtener o crear variante
+    const variantes = getVariantes();
+    let varianteExistente = variantes.find((v: any) => v.modelo_id === modelo_id && v.color === color);
+    let variante_id = varianteExistente?.id;
+    
+    // Si no existe la variante, crearla
+    if (!varianteExistente) {
+      variante_id = Date.now().toString();
+      const nuevaVariante = {
+        id: variante_id,
+        modelo_id,
+        talla: null,
+        color,
+        talla_norm: null,
+        color_norm: color ? color.toLowerCase() : null
+      };
+      variantes.push(nuevaVariante);
+      saveVariantes(variantes);
+    }
+    
+    const activos = getActivos();
+    
+    if (id) {
+      // Actualizar
+      const index = activos.findIndex((a: any) => a.id === id);
+      if (index !== -1) {
+        const activoAnterior = activos[index];
+        activos[index] = {
+          ...activos[index],
+          variante_id,
+          serie,
+          etiqueta,
+          sede_id,
+          ubicacion_id,
+          fecha_compra
+        };
+        
+        // Si cambió la ubicación, registrar movimiento
+        if (activoAnterior.sede_id !== sede_id || activoAnterior.ubicacion_id !== ubicacion_id) {
+          addMovimiento({
+            empresa_id: '1',
+            tipo_mov_id: 3,
+            realizado_por: null,
+            sede_desde_id: activoAnterior.sede_id,
+            ubic_desde_id: activoAnterior.ubicacion_id,
+            sede_hacia_id: sede_id,
+            ubic_hacia_id: ubicacion_id,
+            activo_id: id,
+            variante_id,
+            codigo_lote: null,
+            cantidad: 1,
+            motivo: 'Actualización de ubicación de activo',
+            ref_tabla: null,
+            ref_id: null
+          });
+        }
+        
+        alert('Activo actualizado correctamente');
+      }
+    } else {
+      // Crear
+      const politica = politicas_modelo.find((p: any) => p.modelo_id === modelo_id);
+      const mesesGarantia = politica?.meses_garantia || 12;
+      const garantia_hasta = new Date(fecha_compra);
+      garantia_hasta.setMonth(garantia_hasta.getMonth() + mesesGarantia);
+      
+      const newActivo = {
+        id: Date.now().toString(),
+        variante_id,
+        serie,
+        etiqueta,
+        sede_id,
+        ubicacion_id,
+        fecha_compra,
+        garantia_hasta: garantia_hasta.toISOString().split('T')[0]
+      };
+      
+      activos.push(newActivo);
+      
+      // Registrar movimiento de entrada
+      addMovimiento({
+        empresa_id: '1',
+        tipo_mov_id: 1,
+        realizado_por: null,
+        sede_desde_id: null,
+        ubic_desde_id: null,
+        sede_hacia_id: sede_id,
+        ubic_hacia_id: ubicacion_id,
+        activo_id: newActivo.id,
+        variante_id,
+        codigo_lote: null,
+        cantidad: 1,
+        motivo: 'Registro de nuevo activo',
+        ref_tabla: null,
+        ref_id: null
+      });
+      
+      alert('Activo registrado correctamente');
+    }
+    
+    saveActivos(activos);
+    (e.target as HTMLFormElement).reset();
+    (document.getElementById('activo-id') as HTMLInputElement).value = '';
+    (document.getElementById('btn-submit') as HTMLButtonElement).textContent = 'Registrar Activo';
+    (document.getElementById('btn-cancel') as HTMLButtonElement).classList.add('hidden');
+    renderTabla();
+  });
+
+  // Cancelar edición
+  document.getElementById('btn-cancel')?.addEventListener('click', () => {
+    (document.getElementById('form-activo') as HTMLFormElement).reset();
+    (document.getElementById('activo-id') as HTMLInputElement).value = '';
+    (document.getElementById('btn-submit') as HTMLButtonElement).textContent = 'Registrar Activo';
+    (document.getElementById('btn-cancel') as HTMLButtonElement).classList.add('hidden');
+  });
+
+  // Form trasladar
+  document.getElementById('form-trasladar')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const id = (document.getElementById('trasladar-activo-id') as HTMLInputElement).value;
+    const sede_id = (document.getElementById('trasladar-sede') as HTMLSelectElement).value;
+    const ubicacion_id = (document.getElementById('trasladar-ubicacion') as HTMLSelectElement).value;
+    const motivo = (document.getElementById('trasladar-motivo') as HTMLTextAreaElement).value;
+    
+    const activos = getActivos();
+    const index = activos.findIndex((a: any) => a.id === id);
+    
+    if (index !== -1) {
+      const activoAnterior = activos[index];
+      activos[index] = {
+        ...activos[index],
+        sede_id,
+        ubicacion_id
+      };
+      
+      // Registrar movimiento de traslado
+      addMovimiento({
+        empresa_id: '1',
+        tipo_mov_id: 3,
+        realizado_por: null,
+        sede_desde_id: activoAnterior.sede_id,
+        ubic_desde_id: activoAnterior.ubicacion_id,
+        sede_hacia_id: sede_id,
+        ubic_hacia_id: ubicacion_id,
+        activo_id: id,
+        variante_id: activoAnterior.variante_id,
+        codigo_lote: null,
+        cantidad: 1,
+        motivo: motivo || 'Traslado de activo',
+        ref_tabla: null,
+        ref_id: null
+      });
+      
+      saveActivos(activos);
+      renderTabla();
+      alert('Activo trasladado correctamente');
+      
+      // Cerrar modal
+      (document.getElementById('modal-trasladar') as HTMLElement).classList.add('hidden');
+      (document.getElementById('modal-trasladar') as HTMLElement).classList.remove('flex');
+      (document.getElementById('form-trasladar') as HTMLFormElement).reset();
+    }
+  });
+
+  // Cancelar traslado
+  document.getElementById('btn-cancelar-trasladar')?.addEventListener('click', () => {
+    (document.getElementById('modal-trasladar') as HTMLElement).classList.add('hidden');
+    (document.getElementById('modal-trasladar') as HTMLElement).classList.remove('flex');
+    (document.getElementById('form-trasladar') as HTMLFormElement).reset();
+  });
+
+  // Inicializar
+  initData();
+  renderTabla();
+</script>
