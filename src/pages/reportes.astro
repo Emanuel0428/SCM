@@ -8,8 +8,136 @@ import Layout from '../layouts/Layout.astro';
       <div class="bg-white/80 rounded-xl shadow-lg p-6 flex flex-col items-center">
         <h2 class="text-lg font-bold mb-2 text-blue-800">Generar reporte</h2>
         <p class="text-blue-900 mb-6 text-center">Aquí podrás generar y visualizar reportes de movimientos e inventario.</p>
-        <button class="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-3 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition">Generar reporte</button>
+        <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-3">
+          <select id="report-year" class="border-2 border-gray-200 rounded-lg px-3 py-2">
+            <!-- years populated by script -->
+          </select>
+          <select id="report-type" class="border-2 border-gray-200 rounded-lg px-3 py-2">
+            <option value="movimientos">Movimientos (ingresos/egresos)</option>
+            <option value="inventario">Inventario (activos)</option>
+          </select>
+          <button id="btn-generate-report" class="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-3 rounded-lg font-bold shadow hover:scale-105 hover:from-blue-700 hover:to-blue-500 transition">Generar reporte</button>
+        </div>
+        <div id="report-result" class="w-full mt-6"></div>
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+  // Enhanced client-side monthly report using cache (localStorage)
+  function getMovimientos() {
+    const data = localStorage.getItem('scm_movimientos');
+    return data ? JSON.parse(data) : [];
+  }
+  function getActivos() {
+    const data = localStorage.getItem('scm_activos');
+    return data ? JSON.parse(data) : [];
+  }
+
+  function monthsBetween(year) {
+    return Array.from({length:12}, (_,i)=>({ month:i, label: new Date(year, i, 1).toLocaleString(undefined,{month:'short'}) }));
+  }
+
+  function buildSummaryCards(year) {
+    const movimientos = getMovimientos();
+    const activos = getActivos();
+    const ingresosYear = movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year && m.tipo_mov_id === 1).length;
+    const egresosYear = movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year && m.tipo_mov_id === 2).length;
+    const trasladosYear = movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year && m.tipo_mov_id === 3).length;
+
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full';
+
+    const makeCard = (title, value, hint) => {
+      const c = document.createElement('div');
+      c.className = 'bg-white rounded-lg p-4 shadow flex flex-col';
+      c.innerHTML = `<div class="text-sm text-gray-500">${title}</div><div class="text-2xl font-bold text-blue-900 mt-2">${value}</div>${hint? `<div class="text-xs text-gray-400 mt-1">${hint}</div>`: ''}`;
+      return c;
+    };
+
+    grid.appendChild(makeCard('Total activos', activos.length, 'Registrados en cache'));
+    grid.appendChild(makeCard('Movimientos (año)', movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year).length, `Ingresos ${ingresosYear} • Egresos ${egresosYear} • Traslados ${trasladosYear}`));
+    grid.appendChild(makeCard('Ingresos (año)', ingresosYear, 'Tipo 1'));
+    grid.appendChild(makeCard('Egresos (año)', egresosYear, 'Tipo 2'));
+
+    return grid;
+  }
+
+  function buildMonthlyBars(year) {
+    const movimientos = getMovimientos();
+    const months = monthsBetween(year);
+    const data = months.map(m=>{
+      const start = new Date(year, m.month, 1);
+      const end = new Date(year, m.month+1, 1);
+      const ingresos = movimientos.filter(mm=> { const d=new Date(mm.ocurrido_el); return d>=start && d<end && mm.tipo_mov_id===1; }).length;
+      const egresos = movimientos.filter(mm=> { const d=new Date(mm.ocurrido_el); return d>=start && d<end && mm.tipo_mov_id===2; }).length;
+      return { label: m.label, ingresos, egresos };
+    });
+
+    const maxVal = Math.max(1, ...data.map(d=>Math.max(d.ingresos,d.egresos)));
+    const wrap = document.createElement('div');
+    wrap.className = 'w-full mt-4 bg-white rounded-lg p-4 shadow';
+    const title = document.createElement('h3'); title.className = 'text-lg font-semibold text-blue-900 mb-3'; title.textContent = 'Movimientos por mes';
+    wrap.appendChild(title);
+
+    data.forEach(d=>{
+      const row = document.createElement('div'); row.className = 'flex items-center gap-3 mb-2';
+      const label = document.createElement('div'); label.className = 'w-20 text-sm text-gray-600'; label.textContent = d.label;
+      const bars = document.createElement('div'); bars.className = 'flex-1';
+      const ingresoBar = document.createElement('div');
+      ingresoBar.className = 'h-3 bg-green-400 rounded mr-2';
+      ingresoBar.style.width = `${(d.ingresos/maxVal)*100}%`;
+      const egresoBar = document.createElement('div');
+      egresoBar.className = 'h-3 bg-red-400 rounded';
+      egresoBar.style.width = `${(d.egresos/maxVal)*100}%`;
+      const containerBars = document.createElement('div'); containerBars.className = 'w-full bg-gray-100 rounded h-6 flex items-center px-2';
+      const barsInner = document.createElement('div'); barsInner.className = 'flex gap-2 items-center w-full';
+      const left = document.createElement('div'); left.className = 'flex-1'; left.appendChild(ingresoBar);
+      const right = document.createElement('div'); right.className = 'flex-1'; right.appendChild(egresoBar);
+      barsInner.appendChild(left); barsInner.appendChild(right);
+      containerBars.appendChild(barsInner);
+
+      const numbers = document.createElement('div'); numbers.className = 'w-36 text-sm text-gray-600 text-right'; numbers.innerHTML = `<span class="text-green-600 font-medium">+${d.ingresos}</span> / <span class="text-red-600 font-medium">${d.egresos}</span>`;
+      bars.appendChild(containerBars);
+      row.appendChild(label); row.appendChild(bars); row.appendChild(numbers);
+      wrap.appendChild(row);
+    });
+
+    return wrap;
+  }
+
+  function buildDetailsTable(year) {
+    const movimientos = getMovimientos();
+    const table = document.createElement('table'); table.className='min-w-full divide-y divide-blue-100 mt-4 bg-white rounded-lg overflow-hidden';
+    table.innerHTML = `<thead class="bg-blue-50"><tr><th class="px-3 py-2">Fecha</th><th class="px-3 py-2">Tipo</th><th class="px-3 py-2">Variante</th><th class="px-3 py-2">Cantidad</th><th class="px-3 py-2">Motivo</th></tr></thead><tbody></tbody>`;
+    const tb = table.querySelector('tbody');
+    movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year).forEach(m=>{
+      const tr = document.createElement('tr'); tr.className='';
+      const date = new Date(m.ocurrido_el).toLocaleString();
+      const tipo = m.tipo_mov_id === 1 ? 'Ingreso' : m.tipo_mov_id === 2 ? 'Egreso' : 'Traslado';
+      tr.innerHTML = `<td class="px-3 py-2">${date}</td><td class="px-3 py-2">${tipo}</td><td class="px-3 py-2">${m.variante_id || 'N/A'}</td><td class="px-3 py-2">${m.cantidad}</td><td class="px-3 py-2">${m.motivo || ''}</td>`;
+      tb.appendChild(tr);
+    });
+    return table;
+  }
+
+  (function initReport() {
+    const selectYear = document.getElementById('report-year');
+    const now = new Date();
+    for (let y = now.getFullYear(); y >= now.getFullYear()-5; y--) { const opt = document.createElement('option'); opt.value=String(y); opt.textContent=String(y); selectYear.appendChild(opt); }
+    selectYear.value = String(now.getFullYear());
+
+    document.getElementById('btn-generate-report').addEventListener('click', ()=>{
+      const year = parseInt(document.getElementById('report-year').value);
+      const type = document.getElementById('report-type').value;
+      const result = document.getElementById('report-result'); result.innerHTML = '';
+      // Summary
+      result.appendChild(buildSummaryCards(year));
+      // Monthly visualization
+      result.appendChild(buildMonthlyBars(year));
+      // Detailed table (movimientos) if requested
+      if (type === 'movimientos') result.appendChild(buildDetailsTable(year));
+    });
+  })();
+</script>
