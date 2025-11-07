@@ -8,6 +8,13 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     <form id="form-modelo" class="space-y-3">
       <h4 class="font-semibold">Crear modelo</h4>
       <div>
+        <label class="block text-sm font-medium text-gray-700">Empresa</label>
+        <select id="modelo-empresa-id" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white">
+          <option value="">Seleccione...</option>
+          <!-- opciones pobladas por renderEmpresaOptions -->
+        </select>
+      </div>
+      <div>
         <label class="block text-sm font-medium text-gray-700">Marca</label>
         <select id="modelo-marca-id" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white">
           <option value="">Seleccione...</option>
@@ -82,12 +89,17 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
 
 <script>
   // Manejo de cache para modelos/variantes dentro del componente de control
+  function getEmpresas() {
+    const data = localStorage.getItem('scm_empresas');
+    if (data) return JSON.parse(data);
+    return [];
+  }
   function getModelos() {
     const data = localStorage.getItem('scm_modelos');
     if (data) return JSON.parse(data);
-    try { return window.__SCM_INIT?.modelos || []; } catch (err) { return []; }
+    try { return (window as any).__SCM_INIT?.modelos || []; } catch (err) { return []; }
   }
-  function saveModelos(modelos) {
+  function saveModelos(modelos: any) {
     localStorage.setItem('scm_modelos', JSON.stringify(modelos));
     // Notificar a otros componentes en el mismo tab
     window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_modelos' } }));
@@ -95,18 +107,18 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
   function getMarcas() {
     const data = localStorage.getItem('scm_marcas');
     if (data) return JSON.parse(data);
-    try { return window.__SCM_INIT?.marcas || []; } catch (err) { return []; }
+    try { return (window as any).__SCM_INIT?.marcas || []; } catch (err) { return []; }
   }
-  function saveMarcas(marcasArr) {
+  function saveMarcas(marcasArr: any) {
     localStorage.setItem('scm_marcas', JSON.stringify(marcasArr));
     window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_marcas' } }));
   }
   function getVariantes() {
     const data = localStorage.getItem('scm_variantes');
     if (data) return JSON.parse(data);
-    try { return window.__SCM_INIT?.variantes || []; } catch (err) { return []; }
+    try { return (window as any).__SCM_INIT?.variantes || []; } catch (err) { return []; }
   }
-  function saveVariantes(variantes) {
+  function saveVariantes(variantes: any) {
     localStorage.setItem('scm_variantes', JSON.stringify(variantes));
     window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_variantes' } }));
   }
@@ -118,10 +130,10 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     const firstOption = select.querySelector('option');
     select.innerHTML = '';
     if (firstOption) select.appendChild(firstOption);
-    modelos.forEach(m => {
+    modelos.forEach((m: any) => {
       const opt = document.createElement('option');
       opt.value = m.id;
-      const marcaName = marcasArr.find(ma => ma.id === m.marca_id)?.nombre || '';
+      const marcaName = marcasArr.find((ma: any) => ma.id === m.marca_id)?.nombre || '';
       opt.textContent = `${marcaName} ${m.modelo}`.trim();
       select.appendChild(opt);
     });
@@ -134,7 +146,7 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     const firstOption = select.querySelector('option');
     select.innerHTML = '';
     if (firstOption) select.appendChild(firstOption);
-    marcasArr.forEach(m => {
+    marcasArr.forEach((m: any) => {
       const opt = document.createElement('option');
       opt.value = m.id;
       opt.textContent = m.nombre;
@@ -142,7 +154,22 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     });
   }
 
-  function showSuccess(msg, autoCloseMs = 2500) {
+  function renderEmpresaOptions(selectId = 'modelo-empresa-id') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const empresas = getEmpresas();
+    const firstOption = select.querySelector('option');
+    select.innerHTML = '';
+    if (firstOption) select.appendChild(firstOption);
+    empresas.forEach((e: any) => {
+      const opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = e.nombre;
+      select.appendChild(opt);
+    });
+  }
+
+  function showSuccess(msg: any, autoCloseMs = 2500) {
     const modal = document.getElementById('control-modal-success');
     const msgEl = document.getElementById('control-modal-success-msg');
     if (!modal || !msgEl) return;
@@ -156,10 +183,11 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     function run() {
       try {
   // inicializar cache si es necesario
-  if (!localStorage.getItem('scm_modelos')) localStorage.setItem('scm_modelos', JSON.stringify(window.__SCM_INIT?.modelos || []));
-  if (!localStorage.getItem('scm_variantes')) localStorage.setItem('scm_variantes', JSON.stringify(window.__SCM_INIT?.variantes || []));
-  if (!localStorage.getItem('scm_marcas')) localStorage.setItem('scm_marcas', JSON.stringify(window.__SCM_INIT?.marcas || []));
+  if (!localStorage.getItem('scm_modelos')) localStorage.setItem('scm_modelos', JSON.stringify((window as any).__SCM_INIT?.modelos || []));
+  if (!localStorage.getItem('scm_variantes')) localStorage.setItem('scm_variantes', JSON.stringify((window as any).__SCM_INIT?.variantes || []));
+  if (!localStorage.getItem('scm_marcas')) localStorage.setItem('scm_marcas', JSON.stringify((window as any).__SCM_INIT?.marcas || []));
 
+        renderEmpresaOptions('modelo-empresa-id');
         renderMarcaOptions('modelo-marca-id');
         renderModelOptions('variante-modelo-id');
 
@@ -169,15 +197,16 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
         });
 
         // Crear modelo
-        document.getElementById('form-modelo')?.addEventListener('submit', (e) => {
+        document.getElementById('form-modelo')?.addEventListener('submit', (e: any) => {
           try {
             e.preventDefault();
-            const marca_id = (document.getElementById('modelo-marca-id'))?.value;
-            const nombre = (document.getElementById('modelo-nombre'))?.value.trim();
-            const mesesGarantiaVal = (document.getElementById('modelo-meses-garantia'))?.value;
-            if (!marca_id || !nombre) return;
+            const empresa_id = (document.getElementById('modelo-empresa-id') as HTMLInputElement)?.value;
+            const marca_id = (document.getElementById('modelo-marca-id') as HTMLInputElement)?.value;
+            const nombre = (document.getElementById('modelo-nombre') as HTMLInputElement)?.value.trim();
+            const mesesGarantiaVal = (document.getElementById('modelo-meses-garantia') as HTMLInputElement)?.value;
+            if (!empresa_id || !marca_id || !nombre) return;
             const modelos = getModelos();
-            const newModel = { id: Date.now().toString(), empresa_id: '1', marca_id, modelo: nombre, uom_id: '1', tipo_item_id: 1, familia_id: null };
+            const newModel = { id: Date.now().toString(), empresa_id, marca_id, modelo: nombre, uom_id: '1', tipo_item_id: 1, familia_id: null };
             modelos.push(newModel);
             saveModelos(modelos);
             const meses = parseInt(mesesGarantiaVal || '0', 10);
@@ -187,9 +216,11 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
               localStorage.setItem('scm_politicas', JSON.stringify(politicas));
             }
             renderModelOptions('variante-modelo-id');
+            renderEmpresaOptions('modelo-empresa-id');
             renderMarcaOptions('modelo-marca-id');
-            (document.getElementById('form-modelo')).reset();
-            showSuccess('Modelo creado y guardado en caché');
+            const formModelo = document.getElementById('form-modelo') as HTMLFormElement;
+            if (formModelo) formModelo.reset();
+            showSuccess('Modelo creado y guardado');
           } catch (err) {
             console.error('Error creando modelo', err);
             showSuccess('Error al crear modelo');
@@ -197,19 +228,20 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
         });
 
         // Crear variante
-        document.getElementById('form-variante')?.addEventListener('submit', (e) => {
+        document.getElementById('form-variante')?.addEventListener('submit', (e: any) => {
           try {
             e.preventDefault();
-            const modelo_id = (document.getElementById('variante-modelo-id'))?.value;
-            const color = (document.getElementById('variante-color'))?.value.trim();
-            const talla = (document.getElementById('variante-talla'))?.value.trim();
+            const modelo_id = (document.getElementById('variante-modelo-id') as HTMLInputElement)?.value;
+            const color = (document.getElementById('variante-color') as HTMLInputElement)?.value.trim();
+            const talla = (document.getElementById('variante-talla') as HTMLInputElement)?.value.trim();
             if (!modelo_id || !color) return;
             const variantes = getVariantes();
             const nuevaVar = { id: Date.now().toString(), modelo_id, talla: talla || null, color, talla_norm: talla ? talla.toLowerCase() : null, color_norm: color.toLowerCase() };
             variantes.push(nuevaVar);
             saveVariantes(variantes);
-            (document.getElementById('form-variante')).reset();
-            showSuccess('Variante creada y guardada en caché');
+            const formVariante = document.getElementById('form-variante') as HTMLFormElement;
+            if (formVariante) formVariante.reset();
+            showSuccess('Variante creada y guardada');
           } catch (err) {
             console.error('Error creando variante', err);
             showSuccess('Error al crear variante');
@@ -217,18 +249,19 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
         });
 
         // Crear marca
-        document.getElementById('form-marca')?.addEventListener('submit', (e) => {
+        document.getElementById('form-marca')?.addEventListener('submit', (e: any) => {
           try {
             e.preventDefault();
-            const nombre = (document.getElementById('marca-nombre'))?.value.trim();
+            const nombre = (document.getElementById('marca-nombre') as HTMLInputElement)?.value.trim();
             if (!nombre) return;
             const marcasArr = getMarcas();
             const nuevaMarca = { id: Date.now().toString(), nombre };
             marcasArr.push(nuevaMarca);
             saveMarcas(marcasArr);
-            (document.getElementById('form-marca')).reset();
+            const formMarca = document.getElementById('form-marca') as HTMLFormElement;
+            if (formMarca) formMarca.reset();
             renderMarcaOptions('modelo-marca-id');
-            showSuccess('Marca creada y guardada en caché');
+            showSuccess('Marca creada y guardada');
           } catch (err) {
             console.error('Error creando marca', err);
             showSuccess('Error al crear marca');
@@ -247,5 +280,12 @@ import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } 
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+
+    // Escuchar cambios en los datos de empresas
+    window.addEventListener('scm-data-changed', (e: any) => {
+      if (e.detail?.key === 'scm_empresas') {
+        renderEmpresaOptions('modelo-empresa-id');
+      }
+    });
   })();
 </script>

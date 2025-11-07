@@ -56,7 +56,7 @@ import Layout from '../layouts/Layout.astro';
       return c;
     };
 
-    grid.appendChild(makeCard('Total activos', activos.length, 'Registrados en cache'));
+    grid.appendChild(makeCard('Total activos', activos.length, 'Registrados'));
     grid.appendChild(makeCard('Movimientos (año)', movimientos.filter(m => new Date(m.ocurrido_el).getFullYear() === year).length, `Ingresos ${ingresosYear} • Egresos ${egresosYear} • Traslados ${trasladosYear}`));
     grid.appendChild(makeCard('Ingresos (año)', ingresosYear, 'Tipo 1'));
     grid.appendChild(makeCard('Egresos (año)', egresosYear, 'Tipo 2'));

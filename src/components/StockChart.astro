@@ -6,64 +6,100 @@
   <script>
     import Chart from 'chart.js/auto';
 
-    // Datos de ejemplo para el gráfico de stock
-    const mockData = {
-      labels: ['Electrónica', 'Audiovisual', 'Muebles', 'Papelería'],
-      datasets: [{
-        label: 'Cantidad de productos',
-        data: [12, 7, 15, 9],
-        backgroundColor: [
-          '#2563eb',
-          '#38bdf8',
-          '#fbbf24',
-          '#a3e635'
-        ],
-        hoverBackgroundColor: [
-          '#1e40af',
-          '#0284c7',
-          '#d97706',
-          '#84cc16'
-        ],
-        borderWidth: 1,
-        hoverBorderWidth: 2,
-        hoverOffset: 5
-      }]
-    };
+    let stockChart: Chart | null = null;
 
-    // Crear el gráfico cuando el DOM esté cargado
-    document.addEventListener('DOMContentLoaded', () => {
+    function actualizarStockChart() {
       const ctx = document.getElementById('stockChart') as HTMLCanvasElement;
+      if (!ctx) return;
+
+      // Obtener datos desde localStorage
+      const activos = JSON.parse(localStorage.getItem('scm_activos') || '[]');
+      const variantes = JSON.parse(localStorage.getItem('scm_variantes') || '[]');
+      const modelos = JSON.parse(localStorage.getItem('scm_modelos') || '[]');
+      const marcas = JSON.parse(localStorage.getItem('scm_marcas') || '[]');
+
+      // Contar activos por marca
+      const conteo: Record<string, number> = {};
       
-      if (ctx) {
-        new Chart(ctx, {
-        type: 'doughnut',
-        data: mockData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          animation: {
-            animateRotate: true,
-            animateScale: false
-          },
-          plugins: {
-            legend: {
-              position: 'right',
+      activos.forEach((a: any) => {
+        const variante = variantes.find((v: any) => v.id === a.variante_id);
+        const modelo = modelos.find((m: any) => m.id === variante?.modelo_id);
+        const marca = marcas.find((ma: any) => ma.id === modelo?.marca_id);
+        
+        if (marca) {
+          conteo[marca.nombre] = (conteo[marca.nombre] || 0) + 1;
+        } else {
+          conteo['Sin marca'] = (conteo['Sin marca'] || 0) + 1;
+        }
+      });
+
+      const labels = Object.keys(conteo);
+      const data = Object.values(conteo);
+
+      const colores = [
+        '#2563eb', '#38bdf8', '#fbbf24', '#a3e635', '#f87171',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1'
+      ];
+
+      const hoverColores = [
+        '#1e40af', '#0284c7', '#d97706', '#84cc16', '#dc2626',
+        '#7c3aed', '#db2777', '#0f766e', '#d97706', '#4f46e5'
+      ];
+
+      const chartData = {
+        labels,
+        datasets: [{
+          label: 'Cantidad de activos',
+          data,
+          backgroundColor: colores.slice(0, labels.length),
+          hoverBackgroundColor: hoverColores.slice(0, labels.length),
+          borderWidth: 1,
+          hoverBorderWidth: 2,
+          hoverOffset: 5
+        }]
+      };
+
+      if (stockChart) {
+        stockChart.data = chartData;
+        stockChart.update();
+      } else {
+        stockChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            animation: {
+              animateRotate: true,
+              animateScale: false
             },
-            title: {
-              display: true,
-              text: 'Distribución por categoría'
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return ` ${context.label}: ${context.raw}`;
+            plugins: {
+              legend: {
+                position: 'right',
+              },
+              title: {
+                display: true,
+                text: 'Distribución por marca'
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return ` ${context.label}: ${context.raw}`;
+                  }
                 }
               }
             }
           }
-        }
-      });
+        });
       }
-    });
+    }
+
+    // Crear el gráfico cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', actualizarStockChart);
+
+    // Actualizar cuando cambien los datos
+    window.addEventListener('scm-data-changed', actualizarStockChart);
+    window.addEventListener('dashboard-actualizado', actualizarStockChart);
+    window.addEventListener('storage', actualizarStockChart);
   </script>
 </div>

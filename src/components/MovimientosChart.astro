@@ -6,88 +6,137 @@
   <script>
     import Chart from 'chart.js/auto';
 
-    // Datos de ejemplo para el gráfico de movimientos
-    const mockData = {
-      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May'],
-      datasets: [
-        {
-          label: 'Ingresos',
-          data: [10, 12, 8, 15, 9],
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.2)',
-          borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: '#ffffff',
-          pointBorderColor: '#2563eb',
-          pointHoverRadius: 6,
-          fill: true
-        },
-        {
-          label: 'Egresos',
-          data: [7, 9, 6, 10, 8],
-          borderColor: '#fbbf24',
-          backgroundColor: 'rgba(251, 191, 36, 0.2)',
-          borderWidth: 2,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: '#ffffff',
-          pointBorderColor: '#fbbf24',
-          pointHoverRadius: 6,
-          fill: true
-        }
-      ]
-    };
+    let movimientosChart: Chart | null = null;
 
-    // Crear el gráfico cuando el DOM esté cargado
-    document.addEventListener('DOMContentLoaded', () => {
+    function actualizarMovimientosChart() {
       const ctx = document.getElementById('movimientosChart') as HTMLCanvasElement;
-      
-      if (ctx) {
-        new Chart(ctx, {
-        type: 'line',
-        data: mockData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
+      if (!ctx) return;
+
+      // Obtener datos desde localStorage
+      const movimientos = JSON.parse(localStorage.getItem('scm_movimientos') || '[]');
+
+      // Agrupar movimientos por mes
+      const hoy = new Date();
+      const mesesAtras = 6;
+      const meses: string[] = [];
+      const ingresosPorMes: number[] = [];
+      const egresosPorMes: number[] = [];
+
+      for (let i = mesesAtras - 1; i >= 0; i--) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        const mesNombre = fecha.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
+        meses.push(mesNombre);
+        
+        // Contar ingresos y egresos de ese mes
+        const ingresos = movimientos.filter((m: any) => {
+          const fechaMov = new Date(m.ocurrido_el);
+          return fechaMov.getMonth() === fecha.getMonth() && 
+                 fechaMov.getFullYear() === fecha.getFullYear() &&
+                 m.tipo_mov_id === 1; // ENTRADA
+        }).length;
+
+        const egresos = movimientos.filter((m: any) => {
+          const fechaMov = new Date(m.ocurrido_el);
+          return fechaMov.getMonth() === fecha.getMonth() && 
+                 fechaMov.getFullYear() === fecha.getFullYear() &&
+                 m.tipo_mov_id === 2; // SALIDA
+        }).length;
+
+        ingresosPorMes.push(ingresos);
+        egresosPorMes.push(egresos);
+      }
+
+      const chartData = {
+        labels: meses,
+        datasets: [
+          {
+            label: 'Ingresos',
+            data: ingresosPorMes,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#10b981',
+            pointHoverRadius: 6,
+            fill: true
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
+          {
+            label: 'Egresos',
+            data: egresosPorMes,
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#ef4444',
+            pointHoverRadius: 6,
+            fill: true
+          }
+        ]
+      };
+
+      if (movimientosChart) {
+        movimientosChart.data = chartData;
+        movimientosChart.update();
+      } else {
+        movimientosChart = new Chart(ctx, {
+          type: 'line',
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1
+                },
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                }
+              },
+              x: {
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                }
               }
             },
-            x: {
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              title: {
+                display: true,
+                text: 'Últimos 6 meses'
+              },
+              tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                titleColor: '#1e40af',
+                bodyColor: '#1f2937',
+                borderColor: '#e2e8f0',
+                borderWidth: 1,
+                padding: 10,
+                boxPadding: 3
               }
-            }
-          },
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text: 'Movimientos recientes'
-            },
-            tooltip: {
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              titleColor: '#1e40af',
-              bodyColor: '#1f2937',
-              borderColor: '#e2e8f0',
-              borderWidth: 1,
-              padding: 10,
-              boxPadding: 3
             }
           }
-        }
-      });
+        });
       }
-    });
+    }
+
+    // Crear el gráfico cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', actualizarMovimientosChart);
+
+    // Actualizar cuando cambien los datos
+    window.addEventListener('scm-data-changed', actualizarMovimientosChart);
+    window.addEventListener('dashboard-actualizado', actualizarMovimientosChart);
+    window.addEventListener('storage', actualizarMovimientosChart);
   </script>
 </div>
