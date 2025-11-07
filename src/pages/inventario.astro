@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import InventarioCRUD from '../components/InventarioCRUD.astro';
 import MovimientoCRUD from '../components/MovimientoCRUD.astro';
+import ControlInventario from '../components/ControlInventario.astro';
 ---
 <Layout>
   <div class="flex flex-col items-center w-full">
@@ -13,6 +14,7 @@ import MovimientoCRUD from '../components/MovimientoCRUD.astro';
         <select id="tabs" name="tabs" class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500">
           <option>Activos</option>
           <option>Movimientos</option>
+          <option>Control inventario</option>
         </select>
       </div>
       <div class="hidden sm:block">
@@ -31,6 +33,12 @@ import MovimientoCRUD from '../components/MovimientoCRUD.astro';
             >
               Movimientos
             </button>
+            <button
+              class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium"
+              id="tab-control"
+            >
+              Control inventario
+            </button>
           </nav>
         </div>
       </div>
@@ -43,6 +51,9 @@ import MovimientoCRUD from '../components/MovimientoCRUD.astro';
       <div id="panel-movimientos" class="hidden">
         <MovimientoCRUD />
       </div>
+      <div id="panel-control" class="hidden">
+        <ControlInventario />
+      </div>
     </div>
   </div>
 </Layout>
@@ -51,43 +62,68 @@ import MovimientoCRUD from '../components/MovimientoCRUD.astro';
   // Manejo de pestañas
   const tabActivos = document.getElementById('tab-activos');
   const tabMovimientos = document.getElementById('tab-movimientos');
+  const tabControl = document.getElementById('tab-control');
   const panelActivos = document.getElementById('panel-activos');
   const panelMovimientos = document.getElementById('panel-movimientos');
+  const panelControl = document.getElementById('panel-control');
   const tabSelect = document.querySelector('select#tabs');
 
-  function showTab(tab: 'activos' | 'movimientos') {
+  function resetTabStyles() {
+    [tabActivos, tabMovimientos, tabControl].forEach(t => {
+      if (!t) return;
+      t.classList.remove('border-blue-500', 'text-blue-600');
+      t.classList.add('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
+    });
+  }
+
+  function hideAllPanels() {
+    panelActivos?.classList.add('hidden');
+    panelMovimientos?.classList.add('hidden');
+    panelControl?.classList.add('hidden');
+  }
+
+  function showTab(tab) {
+    resetTabStyles();
+    hideAllPanels();
     if (tab === 'activos') {
       tabActivos?.classList.add('border-blue-500', 'text-blue-600');
-      tabActivos?.classList.remove('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
-      tabMovimientos?.classList.remove('border-blue-500', 'text-blue-600');
-      tabMovimientos?.classList.add('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
       panelActivos?.classList.remove('hidden');
-      panelMovimientos?.classList.add('hidden');
-    } else {
+    } else if (tab === 'movimientos') {
       tabMovimientos?.classList.add('border-blue-500', 'text-blue-600');
-      tabMovimientos?.classList.remove('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
-      tabActivos?.classList.remove('border-blue-500', 'text-blue-600');
-      tabActivos?.classList.add('border-transparent', 'text-gray-500', 'hover:border-gray-300', 'hover:text-gray-700');
       panelMovimientos?.classList.remove('hidden');
-      panelActivos?.classList.add('hidden');
+    } else if (tab === 'control') {
+      tabControl?.classList.add('border-blue-500', 'text-blue-600');
+      panelControl?.classList.remove('hidden');
     }
   }
 
   tabActivos?.addEventListener('click', () => {
     showTab('activos');
-    const select = document.querySelector<HTMLSelectElement>('select#tabs');
+    const select = document.querySelector('select#tabs');
     if (select) select.value = 'Activos';
   });
 
   tabMovimientos?.addEventListener('click', () => {
     showTab('movimientos');
-    const select = document.querySelector<HTMLSelectElement>('select#tabs');
+    const select = document.querySelector('select#tabs');
     if (select) select.value = 'Movimientos';
+  });
+
+  tabControl?.addEventListener('click', () => {
+    showTab('control');
+    const select = document.querySelector('select#tabs');
+    if (select) select.value = 'Control inventario';
   });
 
   // Manejar el select en móvil
   tabSelect?.addEventListener('change', (event) => {
-    const target = event.target as HTMLSelectElement;
-    showTab(target.value === 'Activos' ? 'activos' : 'movimientos');
+    const target = event.target;
+    const val = target.value;
+    if (val === 'Activos') showTab('activos');
+    else if (val === 'Movimientos') showTab('movimientos');
+    else if (val === 'Control inventario') showTab('control');
   });
+
+  // Inicializar mostrando Activos
+  document.addEventListener('DOMContentLoaded', () => showTab('activos'));
 </script>

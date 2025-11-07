@@ -1,0 +1,251 @@
+---
+import { modelos as modelosIniciales, variantes as variantesIniciales, marcas } from '../data/mockData';
+---
+<div class="bg-white/90 rounded-xl shadow-lg p-6 mt-6">
+  <h3 class="text-xl font-bold text-blue-900 mb-4">Control inventario</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Formulario crear modelo -->
+    <form id="form-modelo" class="space-y-3">
+      <h4 class="font-semibold">Crear modelo</h4>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Marca</label>
+        <select id="modelo-marca-id" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white">
+          <option value="">Seleccione...</option>
+          <!-- opciones pobladas por renderMarcaOptions -->
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Nombre del modelo</label>
+        <input id="modelo-nombre" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. Laptop X" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Meses de garantía (opcional)</label>
+        <input id="modelo-meses-garantia" type="number" min="0" class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2" placeholder="12" />
+      </div>
+      <div class="text-right">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Crear modelo</button>
+      </div>
+    </form>
+
+    <!-- Formulario crear variante -->
+    <form id="form-variante" class="space-y-3">
+      <h4 class="font-semibold">Crear variante</h4>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Modelo</label>
+        <select id="variante-modelo-id" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white">
+          <option value="">Seleccione...</option>
+          <!-- opciones pobladas por renderModelOptions('variante-modelo-id') -->
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Color</label>
+        <input id="variante-color" class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. Negro" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Talla (opcional)</label>
+        <input id="variante-talla" class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. M" />
+      </div>
+      <div class="text-right">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Crear variante</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Formulario crear marca -->
+  <form id="form-marca" class="mt-6 space-y-3 md:mt-0">
+    <h4 class="font-semibold">Crear marca</h4>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Nombre de la marca</label>
+      <input id="marca-nombre" required class="mt-1 block w-full border-2 border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. HP" />
+    </div>
+    <div class="text-right">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Crear marca</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal de éxito para control inventario -->
+<div id="control-modal-success" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center shadow-lg">
+    <button id="control-modal-success-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">✕</button>
+    <div class="text-green-600 text-4xl mb-2">✓</div>
+    <h3 class="text-lg font-bold text-blue-900 mb-2">¡Éxito!</h3>
+    <p id="control-modal-success-msg" class="text-sm text-gray-700">Acción completada correctamente.</p>
+    <div class="mt-4">
+      <button id="control-modal-success-ok" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Aceptar</button>
+    </div>
+  </div>
+
+    <!-- Inyectar datos del servidor (mock) para uso en el cliente -->
+    <script set:html={`window.__SCM_INIT = ${JSON.stringify({ modelos: modelosIniciales, variantes: variantesIniciales, marcas })};`}></script>
+</div>
+
+<script>
+  // Manejo de cache para modelos/variantes dentro del componente de control
+  function getModelos() {
+    const data = localStorage.getItem('scm_modelos');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.modelos || []; } catch (err) { return []; }
+  }
+  function saveModelos(modelos) {
+    localStorage.setItem('scm_modelos', JSON.stringify(modelos));
+    // Notificar a otros componentes en el mismo tab
+    window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_modelos' } }));
+  }
+  function getMarcas() {
+    const data = localStorage.getItem('scm_marcas');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.marcas || []; } catch (err) { return []; }
+  }
+  function saveMarcas(marcasArr) {
+    localStorage.setItem('scm_marcas', JSON.stringify(marcasArr));
+    window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_marcas' } }));
+  }
+  function getVariantes() {
+    const data = localStorage.getItem('scm_variantes');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.variantes || []; } catch (err) { return []; }
+  }
+  function saveVariantes(variantes) {
+    localStorage.setItem('scm_variantes', JSON.stringify(variantes));
+    window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_variantes' } }));
+  }
+  function renderModelOptions(selectId = 'variante-modelo-id') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const modelos = getModelos();
+    const marcasArr = getMarcas();
+    const firstOption = select.querySelector('option');
+    select.innerHTML = '';
+    if (firstOption) select.appendChild(firstOption);
+    modelos.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      const marcaName = marcasArr.find(ma => ma.id === m.marca_id)?.nombre || '';
+      opt.textContent = `${marcaName} ${m.modelo}`.trim();
+      select.appendChild(opt);
+    });
+  }
+
+  function renderMarcaOptions(selectId = 'modelo-marca-id') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const marcasArr = getMarcas();
+    const firstOption = select.querySelector('option');
+    select.innerHTML = '';
+    if (firstOption) select.appendChild(firstOption);
+    marcasArr.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.nombre;
+      select.appendChild(opt);
+    });
+  }
+
+  function showSuccess(msg, autoCloseMs = 2500) {
+    const modal = document.getElementById('control-modal-success');
+    const msgEl = document.getElementById('control-modal-success-msg');
+    if (!modal || !msgEl) return;
+    msgEl.textContent = msg;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, autoCloseMs);
+  }
+
+  (function initControl() {
+    function run() {
+      try {
+  // inicializar cache si es necesario
+  if (!localStorage.getItem('scm_modelos')) localStorage.setItem('scm_modelos', JSON.stringify(window.__SCM_INIT?.modelos || []));
+  if (!localStorage.getItem('scm_variantes')) localStorage.setItem('scm_variantes', JSON.stringify(window.__SCM_INIT?.variantes || []));
+  if (!localStorage.getItem('scm_marcas')) localStorage.setItem('scm_marcas', JSON.stringify(window.__SCM_INIT?.marcas || []));
+
+        renderMarcaOptions('modelo-marca-id');
+        renderModelOptions('variante-modelo-id');
+
+        // Prevenir recarga accidental en caso de errores: añadimos un handler de seguridad
+        document.querySelectorAll('#form-modelo,#form-variante,#form-marca').forEach(f => {
+          f.addEventListener('submit', ev => ev.preventDefault());
+        });
+
+        // Crear modelo
+        document.getElementById('form-modelo')?.addEventListener('submit', (e) => {
+          try {
+            e.preventDefault();
+            const marca_id = (document.getElementById('modelo-marca-id'))?.value;
+            const nombre = (document.getElementById('modelo-nombre'))?.value.trim();
+            const mesesGarantiaVal = (document.getElementById('modelo-meses-garantia'))?.value;
+            if (!marca_id || !nombre) return;
+            const modelos = getModelos();
+            const newModel = { id: Date.now().toString(), empresa_id: '1', marca_id, modelo: nombre, uom_id: '1', tipo_item_id: 1, familia_id: null };
+            modelos.push(newModel);
+            saveModelos(modelos);
+            const meses = parseInt(mesesGarantiaVal || '0', 10);
+            if (meses > 0) {
+              const politicas = JSON.parse(localStorage.getItem('scm_politicas') || '[]');
+              politicas.push({ id: Date.now().toString(), modelo_id: newModel.id, meses_garantia: meses });
+              localStorage.setItem('scm_politicas', JSON.stringify(politicas));
+            }
+            renderModelOptions('variante-modelo-id');
+            renderMarcaOptions('modelo-marca-id');
+            (document.getElementById('form-modelo')).reset();
+            showSuccess('Modelo creado y guardado en caché');
+          } catch (err) {
+            console.error('Error creando modelo', err);
+            showSuccess('Error al crear modelo');
+          }
+        });
+
+        // Crear variante
+        document.getElementById('form-variante')?.addEventListener('submit', (e) => {
+          try {
+            e.preventDefault();
+            const modelo_id = (document.getElementById('variante-modelo-id'))?.value;
+            const color = (document.getElementById('variante-color'))?.value.trim();
+            const talla = (document.getElementById('variante-talla'))?.value.trim();
+            if (!modelo_id || !color) return;
+            const variantes = getVariantes();
+            const nuevaVar = { id: Date.now().toString(), modelo_id, talla: talla || null, color, talla_norm: talla ? talla.toLowerCase() : null, color_norm: color.toLowerCase() };
+            variantes.push(nuevaVar);
+            saveVariantes(variantes);
+            (document.getElementById('form-variante')).reset();
+            showSuccess('Variante creada y guardada en caché');
+          } catch (err) {
+            console.error('Error creando variante', err);
+            showSuccess('Error al crear variante');
+          }
+        });
+
+        // Crear marca
+        document.getElementById('form-marca')?.addEventListener('submit', (e) => {
+          try {
+            e.preventDefault();
+            const nombre = (document.getElementById('marca-nombre'))?.value.trim();
+            if (!nombre) return;
+            const marcasArr = getMarcas();
+            const nuevaMarca = { id: Date.now().toString(), nombre };
+            marcasArr.push(nuevaMarca);
+            saveMarcas(marcasArr);
+            (document.getElementById('form-marca')).reset();
+            renderMarcaOptions('modelo-marca-id');
+            showSuccess('Marca creada y guardada en caché');
+          } catch (err) {
+            console.error('Error creando marca', err);
+            showSuccess('Error al crear marca');
+          }
+        });
+
+        document.getElementById('control-modal-success-close')?.addEventListener('click', () => {
+          const modal = document.getElementById('control-modal-success'); if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        });
+        document.getElementById('control-modal-success-ok')?.addEventListener('click', () => {
+          const modal = document.getElementById('control-modal-success'); if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        });
+      } catch (err) {
+        console.error('Error inicializando ControlInventario', err);
+      }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+  })();
+</script>

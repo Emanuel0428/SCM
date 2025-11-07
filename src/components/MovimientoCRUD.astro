@@ -48,15 +48,7 @@ if (tipo === 'ingreso') {
         class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
       >
         <option value="">Seleccione...</option>
-        {variantes.map((v: any) => {
-          const modelo = modelos.find((m: any) => m.id === v.modelo_id);
-          const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
-          return (
-            <option value={v.id}>
-              {marca?.nombre} {modelo?.modelo} {v.color ? `- ${v.color}` : ''}
-            </option>
-          );
-        })}
+        <!-- Opciones pobladas dinámicamente desde localStorage y window.__SCM_INIT -->
       </select>
     </div>
 
@@ -189,12 +181,23 @@ if (tipo === 'ingreso') {
   </div>
 </div>
 
-<script>
-  import { sedes, ubicaciones, variantes as variantesIniciales, modelos, marcas, tipos_movimiento } from '../data/mockData';
-  
+  <script set:html={`window.__SCM_INIT = ${JSON.stringify({ modelos, variantes, marcas, sedes, ubicaciones, tipos_movimiento })};`}></script>
+
+  <script>
+  // Obtener datos disponibles en el runtime del cliente (localStorage o valores iniciales inyectados)
+  const modelos = (window.__SCM_INIT && window.__SCM_INIT.modelos) ? window.__SCM_INIT.modelos : [];
+  const marcas = (window.__SCM_INIT && window.__SCM_INIT.marcas) ? window.__SCM_INIT.marcas : [];
+  const sedes = (window.__SCM_INIT && window.__SCM_INIT.sedes) ? window.__SCM_INIT.sedes : [];
+  const ubicaciones = (window.__SCM_INIT && window.__SCM_INIT.ubicaciones) ? window.__SCM_INIT.ubicaciones : [];
+  const tipos_movimiento = (window.__SCM_INIT && window.__SCM_INIT.tipos_movimiento) ? window.__SCM_INIT.tipos_movimiento : [];
+
   function getVariantes() {
     const data = localStorage.getItem('scm_variantes');
-    return data ? JSON.parse(data) : variantesIniciales;
+    return data ? JSON.parse(data) : (window.__SCM_INIT?.variantes || []);
+  }
+  function getActivos() {
+    const data = localStorage.getItem('scm_activos');
+    return data ? JSON.parse(data) : [];
   }
   
   function initMovimientos() {
@@ -250,6 +253,35 @@ if (tipo === 'ingreso') {
     localStorage.setItem('scm_movimientos', JSON.stringify(movimientos));
   }
 
+  function renderVariantesSelect() {
+    const select = document.getElementById('variante-id-mov');
+    if (!select) return;
+    const variantesArr = getVariantes();
+    const firstOption = select.querySelector('option');
+    select.innerHTML = '';
+    if (firstOption) select.appendChild(firstOption);
+    const activos = getActivos();
+    variantesArr.forEach((v) => {
+      const opt = document.createElement('option');
+      opt.value = v.id;
+      const modelo = modelos.find((m) => m.id === v.modelo_id);
+      const marca = modelo ? marcas.find((ma) => ma.id === modelo.marca_id) : null;
+      // Si existe un activo con esta variante, incluir su etiqueta en el label (nombre del activo)
+      const activoMatch = activos.find(a => a.variante_id === v.id);
+      const parts = [];
+      if (marca?.nombre) parts.push(marca.nombre);
+      if (modelo?.modelo) parts.push(modelo.modelo);
+      if (activoMatch?.etiqueta) parts.push(activoMatch.etiqueta);
+      let label = parts.join(' ');
+      const variantParts = [];
+      if (v.color) variantParts.push(v.color);
+      if (v.talla) variantParts.push(v.talla);
+      if (variantParts.length) label += ` - ${variantParts.join(' / ')}`;
+      opt.textContent = label.trim();
+      select.appendChild(opt);
+    });
+  }
+
   function renderTablaMovimientos() {
     const tbody = document.getElementById('tabla-movimientos');
     if (!tbody) return;
@@ -275,14 +307,27 @@ if (tipo === 'ingreso') {
       const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
       const sedeDesde = mov.sede_desde_id ? sedes.find((s: any) => s.id === mov.sede_desde_id) : null;
       const ubicDesde = mov.ubic_desde_id ? ubicaciones.find((u: any) => u.id === mov.ubic_desde_id) : null;
-      const sedeHacia = sedes.find((s: any) => s.id === mov.sede_hacia_id);
-      const ubicHacia = ubicaciones.find((u: any) => u.id === mov.ubic_hacia_id);
+  const sedeHacia = sedes.find((s) => s.id === mov.sede_hacia_id);
+  const ubicHacia = ubicaciones.find((u) => u.id === mov.ubic_hacia_id);
       const tipo = tipos_movimiento.find((t: any) => t.id === mov.tipo_mov_id);
 
       const fecha = new Date(mov.ocurrido_el);
 
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-blue-50 transition';
+  // Construir label combinado para el elemento (Marca Modelo [Etiqueta] - Variante)
+  const activos = getActivos();
+  const activoMatch = activos.find(a => a.variante_id === mov.variante_id);
+  const elementoLabelParts = [];
+  if (marca?.nombre) elementoLabelParts.push(marca.nombre);
+  if (modelo?.modelo) elementoLabelParts.push(modelo.modelo);
+  if (activoMatch?.etiqueta) elementoLabelParts.push(activoMatch.etiqueta);
+  let elementoLabel = elementoLabelParts.join(' ');
+  const varParts = [];
+  if (variante?.color) varParts.push(variante.color);
+  if (variante?.talla) varParts.push(variante.talla);
+  if (varParts.length) elementoLabel += ` - ${varParts.join(' / ')}`;
+
       tr.innerHTML = `
         <td class="px-4 py-2 text-sm whitespace-nowrap">
           <span class="px-2 py-1 rounded-full text-xs ${
@@ -295,10 +340,10 @@ if (tipo === 'ingreso') {
             ${tipo?.codigo || 'DESCONOCIDO'}
           </span>
         </td>
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${marca?.nombre} ${modelo?.modelo}</td>
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${variante?.color || 'N/A'}</td>
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeDesde && ubicDesde ? `${sedeDesde.nombre} - ${ubicDesde.codigo}` : 'N/A'}</td>
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeHacia?.nombre} - ${ubicHacia?.codigo}</td>
+  <td class="px-4 py-2 text-sm whitespace-nowrap">${elementoLabel}</td>
+  <td class="px-4 py-2 text-sm whitespace-nowrap">${variante?.color || 'N/A'}</td>
+  <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeDesde && ubicDesde ? `${sedeDesde.nombre} - ${ubicDesde.codigo}` : 'N/A'}</td>
+  <td class="px-4 py-2 text-sm whitespace-nowrap">${sedeHacia && ubicHacia ? `${sedeHacia.nombre} - ${ubicHacia.codigo}` : 'N/A'}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${mov.cantidad}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${fecha.toLocaleString()}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap max-w-[200px] truncate">${mov.motivo}</td>
@@ -325,31 +370,31 @@ if (tipo === 'ingreso') {
     });
   }
 
-  function handleEditarMov(e: Event) {
-    const id = (e.target as HTMLElement).getAttribute('data-id');
+  function handleEditarMov(e) {
+    const id = (e.target).getAttribute('data-id');
     const movimientos = getMovimientos();
     const mov = movimientos.find((m: any) => m.id === id);
     
     if (mov) {
-      (document.getElementById('movimiento-id') as HTMLInputElement).value = mov.id;
-      (document.getElementById('tipo-mov-id') as HTMLSelectElement).value = mov.tipo_mov_id.toString();
-      (document.getElementById('variante-id-mov') as HTMLSelectElement).value = mov.variante_id;
-      (document.getElementById('sede-desde-id') as HTMLSelectElement).value = mov.sede_desde_id || '';
-      (document.getElementById('ubic-desde-id') as HTMLSelectElement).value = mov.ubic_desde_id || '';
-      (document.getElementById('sede-hacia-id') as HTMLSelectElement).value = mov.sede_hacia_id;
-      (document.getElementById('ubic-hacia-id') as HTMLSelectElement).value = mov.ubic_hacia_id;
-      (document.getElementById('cantidad') as HTMLInputElement).value = mov.cantidad.toString();
-      (document.getElementById('motivo') as HTMLInputElement).value = mov.motivo || '';
-      
-      (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Actualizar Movimiento';
-      (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.remove('hidden');
+      (document.getElementById('movimiento-id')).value = mov.id;
+      (document.getElementById('tipo-mov-id')).value = mov.tipo_mov_id.toString();
+      (document.getElementById('variante-id-mov')).value = mov.variante_id;
+      (document.getElementById('sede-desde-id')).value = mov.sede_desde_id || '';
+      (document.getElementById('ubic-desde-id')).value = mov.ubic_desde_id || '';
+      (document.getElementById('sede-hacia-id')).value = mov.sede_hacia_id;
+      (document.getElementById('ubic-hacia-id')).value = mov.ubic_hacia_id;
+      (document.getElementById('cantidad')).value = mov.cantidad.toString();
+      (document.getElementById('motivo')).value = mov.motivo || '';
+
+      (document.getElementById('btn-submit-mov')).textContent = 'Actualizar Movimiento';
+      (document.getElementById('btn-cancel-mov')).classList.remove('hidden');
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
-  function handleAnular(e: Event) {
-    const id = (e.target as HTMLElement).getAttribute('data-id');
+  function handleAnular(e) {
+    const id = (e.target).getAttribute('data-id');
     if (confirm('¿Está seguro de anular este movimiento?')) {
       const movimientos = getMovimientos();
       const filtered = movimientos.filter((m: any) => m.id !== id);
@@ -363,17 +408,17 @@ if (tipo === 'ingreso') {
   const formMov = document.getElementById('form-movimiento');
   formMov?.addEventListener('submit', (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(e.target as HTMLFormElement);
-    const id = formData.get('id') as string;
-    const tipo_mov_id = parseInt(formData.get('tipo_mov_id') as string);
-    const variante_id = formData.get('variante_id') as string;
-    const sede_desde_id = (formData.get('sede_desde_id') as string) || undefined;
-    const ubic_desde_id = (formData.get('ubic_desde_id') as string) || undefined;
-    const sede_hacia_id = formData.get('sede_hacia_id') as string;
-    const ubic_hacia_id = formData.get('ubic_hacia_id') as string;
-    const cantidad = parseInt(formData.get('cantidad') as string);
-    const motivo = formData.get('motivo') as string;
+
+    const formData = new FormData(e.target);
+    const id = formData.get('id');
+    const tipo_mov_id = parseInt(String(formData.get('tipo_mov_id')));
+    const variante_id = String(formData.get('variante_id'));
+    const sede_desde_id = formData.get('sede_desde_id') ? String(formData.get('sede_desde_id')) : undefined;
+    const ubic_desde_id = formData.get('ubic_desde_id') ? String(formData.get('ubic_desde_id')) : undefined;
+    const sede_hacia_id = String(formData.get('sede_hacia_id'));
+    const ubic_hacia_id = String(formData.get('ubic_hacia_id'));
+    const cantidad = parseInt(String(formData.get('cantidad')));
+    const motivo = String(formData.get('motivo'));
     
     const movimientos = getMovimientos();
     
@@ -414,22 +459,42 @@ if (tipo === 'ingreso') {
     }
     
     saveMovimientos(movimientos);
-    (e.target as HTMLFormElement).reset();
-    (document.getElementById('movimiento-id') as HTMLInputElement).value = '';
-    (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Registrar Movimiento';
-    (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.add('hidden');
+    (e.target).reset();
+    (document.getElementById('movimiento-id')).value = '';
+    (document.getElementById('btn-submit-mov')).textContent = 'Registrar Movimiento';
+    (document.getElementById('btn-cancel-mov')).classList.add('hidden');
     renderTablaMovimientos();
   });
 
   // Cancelar edición
   document.getElementById('btn-cancel-mov')?.addEventListener('click', () => {
-    (document.getElementById('form-movimiento') as HTMLFormElement).reset();
-    (document.getElementById('movimiento-id') as HTMLInputElement).value = '';
-    (document.getElementById('btn-submit-mov') as HTMLButtonElement).textContent = 'Registrar Movimiento';
-    (document.getElementById('btn-cancel-mov') as HTMLButtonElement).classList.add('hidden');
+    (document.getElementById('form-movimiento')).reset();
+    (document.getElementById('movimiento-id')).value = '';
+    (document.getElementById('btn-submit-mov')).textContent = 'Registrar Movimiento';
+    (document.getElementById('btn-cancel-mov')).classList.add('hidden');
   });
 
   // Inicializar
   initMovimientos();
+  // Rellenar select de variantes desde la cache antes de renderizar tabla
+  renderVariantesSelect();
   renderTablaMovimientos();
+
+  // Escuchar cambios en la cache (mismo tab u otras pestañas)
+  window.addEventListener('scm-data-changed', (e) => {
+    const key = e.detail?.key;
+    if (!key) return;
+    if (['scm_variantes', 'scm_modelos', 'scm_marcas'].includes(key)) {
+      renderVariantesSelect();
+      renderTablaMovimientos();
+    }
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (!e.key) return;
+    if (['scm_variantes', 'scm_modelos', 'scm_marcas'].includes(e.key)) {
+      renderVariantesSelect();
+      renderTablaMovimientos();
+    }
+  });
 </script>

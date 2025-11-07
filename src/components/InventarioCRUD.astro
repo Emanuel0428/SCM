@@ -17,11 +17,7 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
         class="border-2 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition hover:border-gray-400 bg-white"
       >
         <option value="">Seleccione...</option>
-        {modelos.map(m => (
-          <option value={m.id}>
-            {marcas.find(ma => ma.id === m.marca_id)?.nombre} {m.modelo}
-          </option>
-        ))}
+        <!-- opciones pobladas dinámicamente por renderModelSelect -->
       </select>
     </div>
 
@@ -214,9 +210,26 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
   </div>
 </div>
 
-<script>
-  import { modelos, variantes as variantesIniciales, sedes, ubicaciones, marcas, politicas_modelo } from '../data/mockData';
-  
+  <!-- Modal de éxito (registro/acción exitosa) -->
+  <div id="modal-success" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center shadow-lg">
+      <button id="modal-success-close" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">✕</button>
+      <div class="text-green-600 text-4xl mb-2">✓</div>
+      <h3 class="text-lg font-bold text-blue-900 mb-2">¡Éxito!</h3>
+      <p id="modal-success-msg" class="text-sm text-gray-700">Acción completada correctamente.</p>
+      <div class="mt-4">
+        <button id="modal-success-ok" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Aceptar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inyectar datos del servidor (mock) para uso en el cliente -->
+  <script set:html={`window.__SCM_INIT = ${JSON.stringify({ modelos, variantes, marcas, politicas_modelo, sedes, ubicaciones })};`}></script>
+
+  <script>
+  // Hacer disponibles sedes/ubicaciones en el runtime del cliente (se inyectan desde server a window.__SCM_INIT)
+  const sedes = (window.__SCM_INIT && window.__SCM_INIT.sedes) ? window.__SCM_INIT.sedes : [];
+  const ubicaciones = (window.__SCM_INIT && window.__SCM_INIT.ubicaciones) ? window.__SCM_INIT.ubicaciones : [];
   // Funciones de gestión de datos
   function initData() {
     if (!localStorage.getItem('scm_activos')) {
@@ -246,17 +259,55 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     }
     // Inicializar variantes en localStorage
     if (!localStorage.getItem('scm_variantes')) {
-      localStorage.setItem('scm_variantes', JSON.stringify(variantesIniciales));
+      const initVars = (window.__SCM_INIT && window.__SCM_INIT.variantes) ? window.__SCM_INIT.variantes : [];
+      localStorage.setItem('scm_variantes', JSON.stringify(initVars));
     }
   }
 
   function getVariantes() {
     const data = localStorage.getItem('scm_variantes');
-    return data ? JSON.parse(data) : variantesIniciales;
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.variantes || []; } catch (err) { return []; }
+  }
+  function saveVariantes(variantes) {
+    localStorage.setItem('scm_variantes', JSON.stringify(variantes));
+    // Notificar a otros componentes en el mismo tab
+    window.dispatchEvent(new CustomEvent('scm-data-changed', { detail: { key: 'scm_variantes' } }));
   }
 
-  function saveVariantes(variantes: any[]) {
-    localStorage.setItem('scm_variantes', JSON.stringify(variantes));
+  function getModelos() {
+    const data = localStorage.getItem('scm_modelos');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.modelos || []; } catch (err) { return []; }
+  }
+
+  function getMarcas() {
+    const data = localStorage.getItem('scm_marcas');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.marcas || []; } catch (err) { return []; }
+  }
+
+  function getPoliticas() {
+    const data = localStorage.getItem('scm_politicas');
+    if (data) return JSON.parse(data);
+    try { return window.__SCM_INIT?.politicas_modelo || []; } catch (err) { return []; }
+  }
+
+  function renderModelSelect() {
+    const select = document.getElementById('modelo-id');
+    if (!select) return;
+    const modelosArr = getModelos();
+    const marcasArr = getMarcas();
+    const firstOption = select.querySelector('option');
+    select.innerHTML = '';
+    if (firstOption) select.appendChild(firstOption);
+    modelosArr.forEach((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      const marcaName = marcasArr.find((ma) => ma.id === m.marca_id)?.nombre || '';
+      opt.textContent = `${marcaName} ${m.modelo}`.trim();
+      select.appendChild(opt);
+    });
   }
 
   function getActivos() {
@@ -264,7 +315,7 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     return data ? JSON.parse(data) : [];
   }
 
-  function saveActivos(activos: any[]) {
+  function saveActivos(activos) {
     localStorage.setItem('scm_activos', JSON.stringify(activos));
   }
 
@@ -273,11 +324,11 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     return data ? JSON.parse(data) : [];
   }
 
-  function saveMovimientos(movimientos: any[]) {
+  function saveMovimientos(movimientos) {
     localStorage.setItem('scm_movimientos', JSON.stringify(movimientos));
   }
 
-  function addMovimiento(movimiento: any) {
+  function addMovimiento(movimiento) {
     const movimientos = getMovimientos();
     movimientos.push({
       ...movimiento,
@@ -287,6 +338,35 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     saveMovimientos(movimientos);
   }
 
+  // Modal de éxito reusable
+  let successTimeout = null;
+  function showSuccess(msg, autoCloseMs = 2500) {
+    const modal = document.getElementById('modal-success');
+    const msgEl = document.getElementById('modal-success-msg');
+    if (!modal || !msgEl) return;
+    msgEl.textContent = msg;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    if (successTimeout) clearTimeout(successTimeout);
+    successTimeout = setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      successTimeout = null;
+    }, autoCloseMs);
+  }
+
+  document.getElementById('modal-success-close')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-success');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    if (successTimeout) { clearTimeout(successTimeout); successTimeout = null; }
+  });
+  document.getElementById('modal-success-ok')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-success');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    if (successTimeout) { clearTimeout(successTimeout); successTimeout = null; }
+  });
+
   function renderTabla() {
     const tbody = document.getElementById('tabla-activos');
     if (!tbody) return;
@@ -295,13 +375,13 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     const variantes = getVariantes();
     tbody.innerHTML = '';
 
-    activos.forEach((activo: any) => {
-      const variante = variantes.find((v: any) => v.id === activo.variante_id);
-      const modelo = modelos.find((m: any) => m.id === variante?.modelo_id);
-      const marca = modelo ? marcas.find((ma: any) => ma.id === modelo.marca_id) : null;
-      const sede = sedes.find((s: any) => s.id === activo.sede_id);
-      const ubicacion = ubicaciones.find((u: any) => u.id === activo.ubicacion_id);
-      const politica = modelo ? politicas_modelo.find((p: any) => p.modelo_id === modelo.id) : null;
+    activos.forEach((activo) => {
+      const variante = variantes.find((v) => v.id === activo.variante_id);
+      const modelo = getModelos().find((m) => m.id === variante?.modelo_id);
+      const marca = modelo ? getMarcas().find((ma) => ma.id === modelo.marca_id) : null;
+      const sede = sedes.find((s) => s.id === activo.sede_id);
+      const ubicacion = ubicaciones.find((u) => u.id === activo.ubicacion_id);
+      const politica = modelo ? getPoliticas().find((p) => p.modelo_id === modelo.id) : null;
 
       const fechaCompra = new Date(activo.fecha_compra);
       const garantiaHasta = new Date(activo.garantia_hasta);
@@ -316,12 +396,18 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
 
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-blue-50 transition';
+      // Nombre del activo: Marca Modelo Etiqueta
+      const nameParts = [];
+      if (marca?.nombre) nameParts.push(marca.nombre);
+      if (modelo?.modelo) nameParts.push(modelo.modelo);
+      if (activo?.etiqueta) nameParts.push(activo.etiqueta);
+      const activoLabel = nameParts.join(' ');
       tr.innerHTML = `
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${marca?.nombre} ${modelo?.modelo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${activoLabel}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${activo.serie}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${activo.etiqueta}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${variante?.color || 'N/A'}</td>
-        <td class="px-4 py-2 text-sm whitespace-nowrap">${sede?.nombre} - ${ubicacion?.codigo}</td>
+        <td class="px-4 py-2 text-sm whitespace-nowrap">${sede && ubicacion ? `${sede.nombre} - ${ubicacion.codigo}` : 'N/A'}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${fechaCompra.toLocaleDateString()}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">${garantiaHasta.toLocaleDateString()}</td>
         <td class="px-4 py-2 text-sm whitespace-nowrap">
@@ -371,14 +457,14 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     });
   }
 
-  function handleEditar(e: Event) {
-    const id = (e.target as HTMLElement).getAttribute('data-id');
+  function handleEditar(e) {
+    const id = (e.target).getAttribute('data-id');
     const activos = getActivos();
     const variantes = getVariantes();
     const activo = activos.find((a: any) => a.id === id);
     
     if (activo) {
-      const variante = variantes.find((v: any) => v.id === activo.variante_id);
+  const variante = variantes.find((v) => v.id === activo.variante_id);
       
       (document.getElementById('activo-id') as HTMLInputElement).value = activo.id;
       (document.getElementById('variante-id') as HTMLInputElement).value = activo.variante_id;
@@ -397,22 +483,22 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     }
   }
 
-  function handleTrasladar(e: Event) {
-    const id = (e.target as HTMLElement).getAttribute('data-id');
+  function handleTrasladar(e) {
+    const id = (e.target).getAttribute('data-id');
     (document.getElementById('trasladar-activo-id') as HTMLInputElement).value = id || '';
     (document.getElementById('modal-trasladar') as HTMLElement).classList.remove('hidden');
     (document.getElementById('modal-trasladar') as HTMLElement).classList.add('flex');
   }
 
-  function handleEliminar(e: Event) {
-    const id = (e.target as HTMLElement).getAttribute('data-id');
+  function handleEliminar(e) {
+    const id = (e.target).getAttribute('data-id');
     if (confirm('¿Está seguro de eliminar este activo?')) {
       const activos = getActivos();
-      const filtered = activos.filter((a: any) => a.id !== id);
+      const filtered = activos.filter((a) => a.id !== id);
       saveActivos(filtered);
       
       // Registrar movimiento de salida
-      const activo = activos.find((a: any) => a.id === id);
+  const activo = activos.find((a) => a.id === id);
       if (activo) {
         addMovimiento({
           empresa_id: '1',
@@ -453,9 +539,9 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     const fecha_compra = formData.get('fecha_compra') as string;
     
     // Obtener o crear variante
-    const variantes = getVariantes();
-    let varianteExistente = variantes.find((v: any) => v.modelo_id === modelo_id && v.color === color);
-    let variante_id = varianteExistente?.id;
+  const variantes = getVariantes();
+  let varianteExistente = variantes.find((v) => v.modelo_id === modelo_id && v.color === color);
+  let variante_id = varianteExistente?.id;
     
     // Si no existe la variante, crearla
     if (!varianteExistente) {
@@ -476,7 +562,7 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     
     if (id) {
       // Actualizar
-      const index = activos.findIndex((a: any) => a.id === id);
+  const index = activos.findIndex((a) => a.id === id);
       if (index !== -1) {
         const activoAnterior = activos[index];
         activos[index] = {
@@ -513,7 +599,7 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
       }
     } else {
       // Crear
-      const politica = politicas_modelo.find((p: any) => p.modelo_id === modelo_id);
+  const politica = getPoliticas().find((p) => p.modelo_id === modelo_id);
       const mesesGarantia = politica?.meses_garantia || 12;
       const garantia_hasta = new Date(fecha_compra);
       garantia_hasta.setMonth(garantia_hasta.getMonth() + mesesGarantia);
@@ -531,7 +617,7 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
       
       activos.push(newActivo);
       
-      // Registrar movimiento de entrada
+  // Registrar movimiento de entrada
       addMovimiento({
         empresa_id: '1',
         tipo_mov_id: 1,
@@ -549,7 +635,8 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
         ref_id: null
       });
       
-      alert('Activo registrado correctamente');
+      // Mostrar modal de éxito
+      showSuccess('Activo registrado correctamente');
     }
     
     saveActivos(activos);
@@ -573,8 +660,11 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
     e.preventDefault();
     
     const id = (document.getElementById('trasladar-activo-id') as HTMLInputElement).value;
-    const sede_id = (document.getElementById('trasladar-sede') as HTMLSelectElement).value;
-    const ubicacion_id = (document.getElementById('trasladar-ubicacion') as HTMLSelectElement).value;
+    // Coerce empty selections to null to avoid storing 'undefined'/'""' values
+    const sede_id_raw = (document.getElementById('trasladar-sede')).value;
+    const ubicacion_id_raw = (document.getElementById('trasladar-ubicacion')).value;
+    const sede_id = sede_id_raw ? sede_id_raw : null;
+    const ubicacion_id = ubicacion_id_raw ? ubicacion_id_raw : null;
     const motivo = (document.getElementById('trasladar-motivo') as HTMLTextAreaElement).value;
     
     const activos = getActivos();
@@ -626,5 +716,24 @@ import { modelos, variantes, sedes, ubicaciones, marcas, politicas_modelo } from
 
   // Inicializar
   initData();
+  // Rellenar select de modelos/marcas desde la cache antes de renderizar tabla
+  renderModelSelect();
   renderTabla();
+
+  // Escuchar cambios en la cache realizados por el panel de control (mismo tab) o por otras pestañas
+  window.addEventListener('scm-data-changed', (e: any) => {
+    const key = e.detail?.key;
+    if (!key) return;
+    if (key === 'scm_modelos' || key === 'scm_marcas') {
+      renderModelSelect();
+    }
+    // siempre refrescar tabla si cambió variantes/modelos/marcas
+    if (['scm_variantes', 'scm_modelos', 'scm_marcas'].includes(key)) renderTabla();
+  });
+
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (!e.key) return;
+    if (e.key === 'scm_modelos' || e.key === 'scm_marcas') renderModelSelect();
+    if (['scm_variantes', 'scm_modelos', 'scm_marcas'].includes(e.key)) renderTabla();
+  });
 </script>
